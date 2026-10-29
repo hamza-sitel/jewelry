@@ -1,0 +1,186 @@
+
+<main class="scan-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">INVENTORY CONTROL</p>
+      <h1>Barcode scanner</h1>
+      <p class="page-description">
+        Scan a jewelry barcode to view its product and stock details.
+      </p>
+    </div>
+
+    <a class="secondary-button" routerLink="/products">
+      View inventory
+    </a>
+  </header>
+
+  <section class="scanner-panel">
+    <div class="scanner-icon" aria-hidden="true">
+      <svg
+        viewBox="0 0 48 48"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M7 17V9H15M33 9H41V17M41 31V39H33M15 39H7V31"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M12 18V30M17 18V30M21 18V30M27 18V30M31 18V30M36 18V30"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>
+    </div>
+
+    <h2>Scan a product</h2>
+    <p class="scanner-description">
+      Connect your USB scanner, click the input if necessary, and scan a barcode.
+      You can also type a barcode manually.
+    </p>
+
+    <form class="scan-form" (ngSubmit)="searchBarcode()">
+      <label for="barcode-input">Product barcode</label>
+
+      <div class="input-row">
+        <input
+          #barcodeInput
+          id="barcode-input"
+          name="barcode"
+          type="text"
+          [(ngModel)]="barcodeValue"
+          placeholder="Example: JWL000001"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+          [disabled]="isSearching"
+        />
+
+        <button
+          type="submit"
+          class="primary-button"
+          [disabled]="isSearching || !barcodeValue.trim()"
+        >
+          {{ isSearching ? 'Searching...' : 'Find product' }}
+        </button>
+      </div>
+
+      <p class="input-hint">
+        Press Enter after scanning to search automatically.
+      </p>
+    </form>
+
+    @if (errorMessage) {
+      <div class="message message-error" role="alert">
+        {{ errorMessage }}
+      </div>
+    }
+  </section>
+
+  @if (scannedProduct; as product) {
+    <section class="result-panel" aria-live="polite">
+      <div class="result-header">
+        <div>
+          <p class="eyebrow">PRODUCT FOUND</p>
+          <h2>{{ product.name }}</h2>
+          <p class="barcode-value">{{ product.barcode }}</p>
+        </div>
+
+        <span
+          class="stock-badge"
+          [class.stock-empty]="product.quantity === 0"
+          [class.stock-low]="
+            product.quantity > 0 && product.quantity <= 3
+          "
+        >
+          @if (product.quantity === 0) {
+            Out of stock
+          } @else if (product.quantity <= 3) {
+            Low stock
+          } @else {
+            In stock
+          }
+        </span>
+      </div>
+
+      <div class="details-grid">
+        <div class="detail-card">
+          <span>Category</span>
+          <strong>{{ product.categoryName }}</strong>
+        </div>
+
+        <div class="detail-card">
+          <span>Type</span>
+          <strong>{{ product.typeName }}</strong>
+        </div>
+
+        <div class="detail-card">
+          <span>Tracking mode</span>
+          <strong>
+            {{
+              product.trackingMode === 'INDIVIDUAL'
+                ? 'Individual'
+                : 'Quantity'
+            }}
+          </strong>
+        </div>
+
+        <div class="detail-card">
+          <span>Available quantity</span>
+          <strong>{{ product.quantity }} piece(s)</strong>
+        </div>
+
+        <div class="detail-card">
+          <span>Weight per piece</span>
+          <strong>{{ formatWeight(product.weight) }}</strong>
+        </div>
+
+        <div class="detail-card">
+          <span>Total recorded weight</span>
+          <strong>
+            @if (product.weight === null) {
+              Not specified
+            } @else {
+              {{ formatWeight(product.weight * product.quantity) }}
+            }
+          </strong>
+        </div>
+
+        <div class="detail-card">
+          <span>Purchase price per piece</span>
+          <strong>{{ formatPrice(product.purchasePrice) }}</strong>
+        </div>
+
+        <div class="detail-card detail-highlight">
+          <span>Sale price per piece</span>
+          <strong>{{ formatPrice(product.salePrice) }}</strong>
+        </div>
+      </div>
+
+      <div class="result-actions">
+        <a
+          class="primary-button"
+          [routerLink]="['/products', product.id, 'edit']"
+        >
+          Edit product
+        </a>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="clearResult()"
+        >
+          Scan another product
+        </button>
+      </div>
+    </section>
+  } @else if (lastScannedBarcode && !errorMessage && !isSearching) {
+    <section class="empty-result">
+      <p>No product details to display.</p>
+    </section>
+  }
+</main>

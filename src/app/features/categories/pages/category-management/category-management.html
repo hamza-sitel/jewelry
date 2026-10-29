@@ -1,0 +1,160 @@
+<section class="catalog-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">INVENTORY SETTINGS</p>
+      <h1>Categories & types</h1>
+      <p class="subtitle">
+        Organize your jewelry stock by material and product type.
+      </p>
+    </div>
+
+    <a class="secondary-button" routerLink="/products">
+      Back to stock
+    </a>
+  </header>
+
+  @if (message) {
+    <p class="success-message">{{ message }}</p>
+  }
+
+  @if (errorMessage) {
+    <p class="error-message">{{ errorMessage }}</p>
+  }
+
+  <div class="catalog-grid">
+    <section class="catalog-panel">
+      <h2>Categories</h2>
+
+      <label class="field">
+        <span>Choose a category</span>
+        <select
+          name="selectedCategoryId"
+          [(ngModel)]="selectedCategoryId"
+          (ngModelChange)="startCategoryEdit()"
+        >
+          @for (category of categories; track category.id) {
+            <option [ngValue]="category.id">{{ category.name }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Edit category name</span>
+        <input
+          type="text"
+          name="editingCategoryName"
+          [(ngModel)]="editingCategoryName"
+          placeholder="Category name"
+        />
+      </label>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="saveCategoryEdit()"
+      >
+        Save category name
+      </button>
+
+      <div class="separator"></div>
+
+      <h3>Add a category</h3>
+      <p class="hint">
+        A new category needs at least one type before you can create a product
+        in it.
+      </p>
+
+      <label class="field">
+        <span>New category name</span>
+        <input
+          type="text"
+          name="newCategoryName"
+          [(ngModel)]="newCategoryName"
+          placeholder="Example: Titanium"
+        />
+      </label>
+
+      <button
+        type="button"
+        class="secondary-button"
+        (click)="addCategory()"
+      >
+        Add category
+      </button>
+    </section>
+
+    <section class="catalog-panel">
+      <h2>Types</h2>
+      <p class="hint">
+        Types belonging to <strong>{{ selectedCategoryName }}</strong>.
+      </p>
+
+      <div class="type-list">
+        @for (type of types; track type.id) {
+          <div class="type-row">
+            @if (editingTypeId === type.id) {
+              <input
+                type="text"
+                [name]="'type-' + type.id"
+                [(ngModel)]="editingTypeName"
+                aria-label="Edit type name"
+              />
+
+              <button
+                type="button"
+                class="small-button"
+                (click)="saveTypeEdit()"
+              >
+                Save
+              </button>
+
+              <button
+                type="button"
+                class="small-button muted-button"
+                (click)="cancelTypeEdit()"
+              >
+                Cancel
+              </button>
+            } @else {
+              <span class="type-name">{{ type.name }}</span>
+
+              <button
+                type="button"
+                class="small-button"
+                (click)="startTypeEdit(type)"
+              >
+                Edit
+              </button>
+            }
+          </div>
+        } @empty {
+          <p class="empty-state">
+            No types yet. Add at least one type for this category.
+          </p>
+        }
+      </div>
+
+      <div class="separator"></div>
+
+      <h3>Add a type</h3>
+
+      <label class="field">
+        <span>New type for {{ selectedCategoryName }}</span>
+        <input
+          type="text"
+          name="newTypeName"
+          [(ngModel)]="newTypeName"
+          placeholder="Example: Pendant"
+        />
+      </label>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="addType()"
+      >
+        Add type
+      </button>
+    </section>
+  </div>
+</section>

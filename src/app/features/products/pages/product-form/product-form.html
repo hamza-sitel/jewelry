@@ -1,0 +1,209 @@
+<section class="product-form-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">INVENTORY MANAGEMENT</p>
+      <h1>{{ isEditMode ? 'Edit product' : 'Add a product' }}</h1>
+      <p class="subtitle">
+        Manage product details, classification and stock.
+      </p>
+    </div>
+
+    <a class="secondary-button" routerLink="/products">
+      Back to stock
+    </a>
+  </header>
+
+  @if (isLoading) {
+    <div class="message">Loading product...</div>
+  } @else {
+    <form class="product-form" (ngSubmit)="onSubmit()">
+      <section class="form-section">
+        <h2>Product details</h2>
+
+        <label class="field">
+          <span>Product name</span>
+          <input
+            type="text"
+            name="name"
+            [(ngModel)]="name"
+            placeholder="Example: Gold ring"
+            required
+          />
+        </label>
+
+        <div class="field">
+          <label for="category">Category</label>
+          <select
+            id="category"
+            name="categoryId"
+            [(ngModel)]="categoryId"
+            (ngModelChange)="onCategoryChange()"
+            required
+          >
+            @for (category of categories; track category.id) {
+              <option [ngValue]="category.id">
+                {{ category.name }}
+              </option>
+            }
+          </select>
+        </div>
+
+        <div class="inline-editor">
+          <label class="field">
+            <span>New category</span>
+            <input
+              type="text"
+              name="newCategoryName"
+              [(ngModel)]="newCategoryName"
+              placeholder="Example: Titanium"
+            />
+          </label>
+
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="addCategory()"
+          >
+            Add category
+          </button>
+        </div>
+
+        @if (categoryMessage) {
+          <p class="form-message">{{ categoryMessage }}</p>
+        }
+
+        <div class="field">
+          <label for="productType">Type — {{ selectedCategoryName }}</label>
+          <select
+            id="productType"
+            name="typeId"
+            [(ngModel)]="typeId"
+            [disabled]="types.length === 0"
+            required
+          >
+            <option [ngValue]="0">Select a type</option>
+            @for (type of types; track type.id) {
+              <option [ngValue]="type.id">{{ type.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="inline-editor">
+          <label class="field">
+            <span>New type for {{ selectedCategoryName }}</span>
+            <input
+              type="text"
+              name="newTypeName"
+              [(ngModel)]="newTypeName"
+              placeholder="Example: Pendant"
+            />
+          </label>
+
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="addType()"
+          >
+            Add type
+          </button>
+        </div>
+
+        @if (typeMessage) {
+          <p class="form-message">{{ typeMessage }}</p>
+        }
+      </section>
+
+      <section class="form-section">
+        <h2>Stock details</h2>
+
+        <label class="field">
+          <span>Tracking mode</span>
+          <select name="trackingMode" [(ngModel)]="trackingMode">
+            <option value="INDIVIDUAL">Individual piece</option>
+            <option value="QUANTITY">Quantity-based stock</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Quantity</span>
+          <input
+            type="number"
+            name="quantity"
+            [(ngModel)]="quantity"
+            min="1"
+            step="1"
+            required
+          />
+          <small>
+            Both tracking modes can have multiple pieces.
+          </small>
+        </label>
+
+        <label class="field">
+          <span>Weight per piece (g) — optional</span>
+          <input
+            type="number"
+            name="weight"
+            [(ngModel)]="weight"
+            min="0.001"
+            step="0.001"
+            placeholder="Leave empty if not weighed"
+          />
+          <small>
+            Total recorded weight is the weight per piece multiplied by quantity.
+          </small>
+        </label>
+      </section>
+
+      <section class="form-section">
+        <h2>Pricing</h2>
+
+        <label class="field">
+          <span>Purchase price (DH)</span>
+          <input
+            type="number"
+            name="purchasePrice"
+            [(ngModel)]="purchasePrice"
+            min="0"
+            step="0.01"
+            required
+          />
+        </label>
+
+        <label class="field">
+          <span>Sale price (DH)</span>
+          <input
+            type="number"
+            name="salePrice"
+            [(ngModel)]="salePrice"
+            min="0"
+            step="0.01"
+            required
+          />
+        </label>
+      </section>
+
+      @if (errorMessage) {
+        <p class="error-message">{{ errorMessage }}</p>
+      }
+
+      <footer class="form-actions">
+        <a class="secondary-button" routerLink="/products">Cancel</a>
+
+        <button
+          type="submit"
+          class="primary-button"
+          [disabled]="isSaving || isLoading"
+        >
+          {{
+            isSaving
+              ? 'Saving...'
+              : isEditMode
+                ? 'Save changes'
+                : 'Create product'
+          }}
+        </button>
+      </footer>
+    </form>
+  }
+</section>

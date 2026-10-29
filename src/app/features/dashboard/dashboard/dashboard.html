@@ -1,0 +1,201 @@
+<div class="atelier-dashboard">
+  <header class="dashboard-header">
+    <div>
+      <span class="eyebrow">WARM ATELIER / BOUTIQUE OVERVIEW</span>
+      <h1>Good day. <em>Your atelier.</em></h1>
+      <p>A clear overview of your jewelry stock and recorded valuations.</p>
+    </div>
+
+    <button
+      type="button"
+      class="refresh-button"
+      (click)="loadDashboard()"
+      [disabled]="isLoading"
+    >
+      ↻ Refresh data
+    </button>
+  </header>
+
+  @if (isLoading) {
+    <div class="dashboard-state">Preparing your inventory overview…</div>
+  } @else if (errorMessage) {
+    <div class="dashboard-state dashboard-error">
+      <p>{{ errorMessage }}</p>
+      <button type="button" class="refresh-button" (click)="loadDashboard()">
+        Try again
+      </button>
+    </div>
+  } @else {
+    <section class="welcome-strip">
+      <div class="welcome-mark">✳</div>
+      <div>
+        <strong>Every piece tells a story.</strong>
+        <p>Your current inventory figures, collected in one place.</p>
+      </div>
+      <span class="live-label"><span></span> MOCK DATA</span>
+    </section>
+
+    <section class="dashboard-metrics">
+      <article class="metric-card">
+        <span class="metric-topline">PRODUCT RECORDS <span>01</span></span>
+        <strong>{{ totalProducts }}</strong>
+        <p>Distinct products and models</p>
+        <div class="metric-bottom"><span class="metric-line"></span></div>
+      </article>
+
+      <article class="metric-card">
+        <span class="metric-topline">TOTAL PIECES <span>02</span></span>
+        <strong>{{ totalUnits }}</strong>
+        <p>Pieces recorded in stock</p>
+        <div class="metric-bottom"><span class="metric-line gold-line"></span></div>
+      </article>
+
+      <article class="metric-card">
+        <span class="metric-topline">SALE VALUE <span>03</span></span>
+        <strong class="metric-money">{{ formatPrice(inventorySaleValue) }}</strong>
+        <p>Estimated value at listed sale prices</p>
+        <div class="metric-bottom"><span class="metric-line green-line"></span></div>
+      </article>
+
+      <article class="metric-card">
+        <span class="metric-topline">LOW STOCK <span>04</span></span>
+        <strong>{{ lowStockCount }}</strong>
+        <p>Product records with 1–3 pieces</p>
+        <div class="metric-bottom"><span class="metric-line terracotta-line"></span></div>
+      </article>
+    </section>
+
+    <section class="charts-grid">
+      <article class="chart-card category-card">
+        <div class="chart-heading">
+          <div>
+            <span class="eyebrow">STOCK COMPOSITION</span>
+            <h2>Collection by category</h2>
+            <p>How the recorded pieces are distributed.</p>
+          </div>
+          <span class="chart-tag">01 / PIE</span>
+        </div>
+
+        @if (totalUnits === 0) {
+          <div class="chart-empty">No stock data to display yet.</div>
+        } @else {
+          <div class="pie-layout">
+            <div
+              class="pie-chart"
+              role="img"
+              [style.background]="categoryChartBackground"
+              aria-label="Circular chart showing the stock distribution by category"
+            >
+              <div class="pie-hole">
+                <span>TOTAL PIECES</span>
+                <strong>{{ totalUnits }}</strong>
+              </div>
+            </div>
+
+            <div class="chart-legend">
+              @for (metric of categoryMetrics; track metric.name) {
+                <div class="legend-item">
+                  <span class="legend-dot" [style.background]="metric.color"></span>
+                  <span class="legend-name">{{ metric.name }}</span>
+                  <strong>{{ metric.percentage | number: '1.0-1' }}%</strong>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </article>
+
+      <article class="chart-card bar-card">
+        <div class="chart-heading">
+          <div>
+            <span class="eyebrow">CATEGORY COMPARISON</span>
+            <h2>Pieces by category</h2>
+            <p>Compare stock volumes at a glance.</p>
+          </div>
+          <span class="chart-tag">02 / BAR</span>
+        </div>
+
+        @if (categoryMetrics.length === 0) {
+          <div class="chart-empty">Add products to see this chart.</div>
+        } @else {
+          <div class="bar-chart">
+            @for (metric of categoryMetrics; track metric.name) {
+              <div class="bar-row">
+                <div class="bar-label">
+                  <span>{{ metric.name }}</span>
+                  <strong>{{ metric.count }}</strong>
+                </div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    [style.width.%]="(metric.count / highestCategoryCount) * 100"
+                    [style.background]="metric.color"
+                  ></div>
+                </div>
+              </div>
+            }
+          </div>
+          <div class="bar-axis">
+            <span>0 pieces</span>
+            <span>Maximum: {{ highestCategoryCount }}</span>
+          </div>
+        }
+      </article>
+    </section>
+
+    <section class="weight-summary">
+      <div class="weight-symbol">◇</div>
+      <div class="weight-copy">
+        <span class="eyebrow">RECORDED WEIGHT</span>
+        <h2>{{ formatWeight(recordedTotalWeight) }}</h2>
+        <p>Calculated from quantities and unit weights that have been recorded.</p>
+      </div>
+      <span class="weight-note">Unrecorded weights are excluded</span>
+    </section>
+
+    <section class="recent-card">
+      <div class="recent-heading">
+        <div>
+          <span class="eyebrow">COLLECTION REGISTER</span>
+          <h2>Recently added demo records</h2>
+        </div>
+        <span class="demo-tag">DEMO DATA</span>
+      </div>
+
+      <div class="recent-table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Category / type</th>
+              <th>Quantity</th>
+              <th>Weight per piece</th>
+              <th>Sale price</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (product of products.slice().reverse().slice(0, 5); track product.id) {
+              <tr>
+                <td>
+                  <div class="recent-product">
+                    <span>{{ product.name.charAt(0).toUpperCase() }}</span>
+                    <strong>{{ product.name }}</strong>
+                  </div>
+                </td>
+                <td>
+                  <span class="recent-category">{{ product.categoryName }}</span>
+                  <small>{{ product.typeName }}</small>
+                </td>
+                <td>{{ product.quantity }}</td>
+                <td>
+                  {{ product.weight === null ? 'Not recorded' : formatWeight(product.weight) }}
+                </td>
+                <td class="recent-price">{{ formatPrice(product.salePrice) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</div>

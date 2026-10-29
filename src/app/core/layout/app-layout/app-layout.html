@@ -1,0 +1,109 @@
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <a routerLink="/dashboard" class="brand">
+      <span class="brand-icon">J</span>
+
+      <span class="brand-text">
+        <strong>JEWELRY</strong>
+        <small>INVENTORY SYSTEM</small>
+      </span>
+    </a>
+
+    <nav class="navigation">
+      <p class="section-label">WORKSPACE</p>
+
+      <a
+        routerLink="/dashboard"
+        routerLinkActive="active"
+        class="nav-link"
+      >
+        <span class="nav-icon">▦</span>
+        Dashboard
+      </a>
+
+      <a
+        routerLink="/products"
+        routerLinkActive="active"
+        class="nav-link"
+      >
+        <span class="nav-icon">◇</span>
+        Products
+      </a>
+
+      <a
+        routerLink="/inventory"
+        routerLinkActive="active"
+        class="nav-link"
+      >
+        <span class="nav-icon">⇄</span>
+        Stock movements
+      </a>
+
+      <a
+        routerLink="/categories"
+        routerLinkActive="active"
+        class="nav-link"
+      >
+        <span class="nav-icon">▤</span>
+        Categories
+      </a>
+
+      <a
+        routerLink="/barcode"
+        routerLinkActive="active"
+        class="nav-link"
+      >
+        <span class="nav-icon">▥</span>
+        Barcode scanner
+      </a>
+
+      <p class="section-label management-label">MANAGEMENT</p>
+
+      <a
+        routerLink="/reports"
+        routerLinkActive="active"
+        class="nav-link"
+      >
+        <span class="nav-icon">▥</span>
+        Reports
+      </a>
+
+      <a
+        routerLink="/settings"
+        routerLinkActive="active"
+        class="nav-link"
+      >
+        <span class="nav-icon">⚙</span>
+        Settings
+      </a>
+    </nav>
+
+    <footer class="sidebar-footer">
+      <span class="status-dot"></span>
+      Inventory workspace
+    </footer>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <div>
+        <span class="breadcrumb">Jewelry / Management</span>
+        <h1>Inventory Management</h1>
+      </div>
+
+      <div class="profile">
+        <span class="profile-avatar">A</span>
+
+        <div class="profile-info">
+          <strong>Administrator</strong>
+          <small>Shop manager</small>
+        </div>
+      </div>
+    </header>
+
+    <section class="page-content">
+      <router-outlet />
+    </section>
+  </main>
+</div>
