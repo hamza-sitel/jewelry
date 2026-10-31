@@ -3,6 +3,11 @@ import { Routes } from '@angular/router';
 import { AppLayout } from './core/layout/app-layout/app-layout';
 import { ProductForm } from './features/products/pages/product-form/product-form';
 import { CategoryManagement } from './features/categories/pages/category-management/category-management';
+import { StockOperation } from './features/inventory/pages/stock-operation/stock-operation';
+import { StockHistory } from './features/inventory/pages/stock-history/stock-history';
+
+
+
 export const routes: Routes = [
   {
     path: '',
@@ -31,6 +36,8 @@ export const routes: Routes = [
           import('./features/products/pages/product-form/product-form')
             .then((m) => m.ProductForm),
       },
+      { path: 'stock-operation', component: StockOperation },
+      { path: 'stock-history', component: StockHistory },
     ]
   }, 
   {

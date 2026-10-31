@@ -1,0 +1,95 @@
+
+<div class="history-page">
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">INVENTORY MANAGEMENT</span>
+      <h1>Stock history</h1>
+      <p>Review every purchase, sale and stock adjustment.</p>
+    </div>
+
+    <a routerLink="/stock-operation" class="new-operation-link">
+      + New operation
+    </a>
+  </header>
+
+  <section class="history-card">
+    <div class="card-heading">
+      <div>
+        <h2>All operations</h2>
+        <p>{{ filteredOperations.length }} recorded operations</p>
+      </div>
+
+      <select
+        aria-label="Filter operations"
+        [(ngModel)]="selectedFilter"
+      >
+        <option value="ALL">All operations</option>
+        <option value="PURCHASE">Purchases</option>
+        <option value="SALE">Sales</option>
+        <option value="MANUAL_ADD">Manual additions</option>
+        <option value="MANUAL_REMOVE">Manual removals</option>
+      </select>
+    </div>
+
+    @if (isLoading) {
+      <div class="empty-state">
+        Loading stock history...
+      </div>
+    } @else if (errorMessage) {
+      <div class="empty-state error">
+        {{ errorMessage }}
+      </div>
+    } @else if (filteredOperations.length === 0) {
+      <div class="empty-state">
+        <h3>No operations found</h3>
+        <p>Stock movements will appear here after you record them.</p>
+      </div>
+    } @else {
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Product</th>
+              <th>Barcode</th>
+              <th>Operation</th>
+              <th>Change</th>
+              <th>Previous stock</th>
+              <th>New stock</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (operation of filteredOperations; track operation.id) {
+              <tr>
+                <td>{{ formatDate(operation.createdAt) }}</td>
+                <td class="product-name">{{ operation.productName }}</td>
+                <td class="barcode">{{ operation.barcode }}</td>
+                <td>
+                  <span
+                    class="operation-badge"
+                    [class.positive]="getOperationClass(operation.type) === 'positive'"
+                    [class.negative]="getOperationClass(operation.type) === 'negative'"
+                  >
+                    {{ getOperationLabel(operation.type) }}
+                  </span>
+                </td>
+                <td
+                  class="quantity-change"
+                  [class.positive]="getOperationClass(operation.type) === 'positive'"
+                  [class.negative]="getOperationClass(operation.type) === 'negative'"
+                >
+                  {{ getQuantityChange(operation) }}
+                </td>
+                <td>{{ operation.previousStock }}</td>
+                <td>{{ operation.newStock }}</td>
+                <td>{{ operation.notes || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>

@@ -37,7 +37,7 @@ export class BarcodeScan implements AfterViewInit {
 
   ngAfterViewInit(): void {
     this.focusBarcodeInput();
-  }
+  } 
 
   searchBarcode(): void {
     const barcode = this.barcodeValue.trim().toUpperCase();

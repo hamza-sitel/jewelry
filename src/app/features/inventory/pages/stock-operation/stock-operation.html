@@ -1,0 +1,129 @@
+
+<div class="operation-page">
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">INVENTORY MANAGEMENT</span>
+      <h1>Stock operation</h1>
+      <p>Record purchases, sales and stock adjustments.</p>
+    </div>
+
+    <a routerLink="/inventory" class="back-link">
+      Back to inventory
+    </a>
+  </header>
+
+  <section class="operation-card">
+    <div class="card-heading">
+      <div>
+        <h2>New operation</h2>
+        <p>Select a product and enter the stock movement.</p>
+      </div>
+    </div>
+
+    <form (ngSubmit)="submitOperation()">
+      <div class="form-group">
+        <label for="product">Product</label>
+
+        <select
+          id="product"
+          name="product"
+          [(ngModel)]="selectedProductId"
+          required
+        >
+          <option [ngValue]="null" disabled>Select a product</option>
+
+          @for (product of products; track product.id) {
+            <option [ngValue]="product.id">
+              {{ product.name }} — {{ product.barcode }}
+            </option>
+          }
+        </select>
+      </div>
+
+      @if (selectedProduct; as product) {
+        <div class="product-summary">
+          <div>
+            <span class="summary-label">CURRENT STOCK</span>
+            <strong>{{ product.quantity }} pieces</strong>
+          </div>
+
+          <div>
+            <span class="summary-label">TRACKING MODE</span>
+            <strong>{{ product.trackingMode }}</strong>
+          </div>
+
+          <div>
+            <span class="summary-label">SALE PRICE</span>
+            <strong>{{ formatPrice(product.salePrice) }}</strong>
+          </div>
+        </div>
+      }
+
+      <div class="form-group">
+        <label for="operationType">Operation type</label>
+
+        <select
+          id="operationType"
+          name="operationType"
+          [(ngModel)]="operationType"
+          required
+        >
+          <option value="SALE">Sale — decrease stock</option>
+          <option value="PURCHASE">Purchase — increase stock</option>
+          <option value="MANUAL_ADD">Manual addition</option>
+          <option value="MANUAL_REMOVE">Manual removal</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="quantity">Quantity</label>
+
+        <input
+          id="quantity"
+          name="quantity"
+          type="number"
+          min="1"
+          step="1"
+          [(ngModel)]="quantity"
+          required
+        />
+
+        <span class="field-hint">
+          Enter the number of pieces, not the total weight.
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label for="notes">Notes <span>(optional)</span></label>
+
+        <textarea
+          id="notes"
+          name="notes"
+          rows="4"
+          [(ngModel)]="notes"
+          placeholder="Add a note about this operation..."
+        ></textarea>
+      </div>
+
+      @if (successMessage) {
+        <div class="message success-message">
+          {{ successMessage }}
+        </div>
+      }
+
+      @if (errorMessage) {
+        <div class="message error-message">
+          {{ errorMessage }}
+        </div>
+      }
+
+      <button
+        type="submit"
+        class="submit-button"
+        [disabled]="isLoading || products.length === 0"
+      >
+        {{ isLoading ? 'Saving...' : 'Save operation' }}
+      </button>
+    </form>
+  </section>
+</div>
