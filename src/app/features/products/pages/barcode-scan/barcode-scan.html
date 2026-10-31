@@ -38,6 +38,7 @@
     </div>
 
     <h2>Scan a product</h2>
+
     <p class="scanner-description">
       Connect your USB scanner, click the input if necessary, and scan a barcode.
       You can also type a barcode manually.
@@ -160,6 +161,87 @@
           <strong>{{ formatPrice(product.salePrice) }}</strong>
         </div>
       </div>
+
+      <!-- Stock operation form -->
+      <section class="scan-operation">
+        <div class="operation-heading">
+          <div>
+            <p class="eyebrow">STOCK MANAGEMENT</p>
+            <h3>Record stock operation</h3>
+            <p>Update the inventory for this scanned product.</p>
+          </div>
+        </div>
+
+        <form (ngSubmit)="submitStockOperation()">
+          <div class="operation-form-grid">
+            <div class="operation-field">
+              <label for="scan-operation-type">Operation type</label>
+
+              <select
+                id="scan-operation-type"
+                name="scanOperationType"
+                [(ngModel)]="operationType"
+                [disabled]="isSaving"
+              >
+                <option value="SALE">Sale — decrease stock</option>
+                <option value="PURCHASE">Purchase — increase stock</option>
+                <option value="MANUAL_ADD">Manual addition</option>
+                <option value="MANUAL_REMOVE">Manual removal</option>
+              </select>
+            </div>
+
+            <div class="operation-field">
+              <label for="scan-operation-quantity">Quantity</label>
+
+              <input
+                id="scan-operation-quantity"
+                name="scanOperationQuantity"
+                type="number"
+                min="1"
+                step="1"
+                [(ngModel)]="operationQuantity"
+                [disabled]="isSaving"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="operation-field">
+            <label for="scan-operation-notes">
+              Notes <span>(optional)</span>
+            </label>
+
+            <textarea
+              id="scan-operation-notes"
+              name="scanOperationNotes"
+              rows="3"
+              [(ngModel)]="operationNotes"
+              [disabled]="isSaving"
+              placeholder="Add a note about this operation..."
+            ></textarea>
+          </div>
+
+          @if (operationSuccessMessage) {
+            <div class="message message-success" role="status">
+              {{ operationSuccessMessage }}
+            </div>
+          }
+
+          @if (operationErrorMessage) {
+            <div class="message message-error" role="alert">
+              {{ operationErrorMessage }}
+            </div>
+          }
+
+          <button
+            type="submit"
+            class="primary-button operation-submit"
+            [disabled]="isSaving"
+          >
+            {{ isSaving ? 'Saving operation...' : 'Save stock operation' }}
+          </button>
+        </form>
+      </section>
 
       <div class="result-actions">
         <a
