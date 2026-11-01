@@ -1,104 +1,134 @@
 
-import { Component, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Injectable, inject } from '@angular/core';
+import { Observable, of, throwError } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { ProductService } from '../../../products/product.service';
 import type { ProductResponse } from '../../../products/product.model';
 
-import { StockOperationService } from '../../services/stock-operation.service';
-import type { StockOperationType } from '../../stock-operation.model';
+import type {
+  StockOperation,
+  StockOperationType,
+} from '../../stock-operation.model';
 
-@Component({
-  selector: 'app-stock-operation',
-  standalone: true,
-  imports: [FormsModule, RouterLink],
-  templateUrl: './stock-operation.html',
-  styleUrl: './stock-operation.scss',
+@Injectable({
+  providedIn: 'root',
 })
-export class StockOperation {
+export class StockOperationService {
   private readonly productService = inject(ProductService);
-  private readonly stockOperationService = inject(StockOperationService);
 
-  products: ProductResponse[] = [];
+  private operations: StockOperation[] = [];
+  private nextOperationId = 1;
 
-  selectedProductId: number | null = null;
-  operationType: StockOperationType = 'SALE';
-  quantity = 1;
-  notes = '';
-
-  isLoading = false;
-  successMessage = '';
-  errorMessage = '';
-
-  constructor() {
-    this.loadProducts();
+  // Return all stock operations.
+  getOperations(): Observable<StockOperation[]> {
+    return of([...this.operations]);
   }
 
-  loadProducts(): void {
-    this.productService.getProducts().subscribe({
-      next: products => {
-        this.products = products;
-      },
-      error: () => {
-        this.errorMessage = 'Unable to load products.';
-      },
-    });
+  // Return operations belonging to one product.
+  getOperationsByProduct(
+    productId: number,
+  ): Observable<StockOperation[]> {
+    const productOperations = this.operations.filter(
+      operation => operation.productId === productId,
+    );
+
+    return of([...productOperations]);
   }
 
-  get selectedProduct(): ProductResponse | undefined {
-    return this.products.find(
-      product => product.id === this.selectedProductId,
+  // Create a stock operation and update product quantity.
+  createOperation(
+    productId: number,
+    type: StockOperationType,
+    quantity: number,
+    notes: string | null = null,
+  ): Observable<StockOperation> {
+    // Validate quantity.
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      return throwError(
+        () => new Error('Quantity must be a positive whole number.'),
+      );
+    }
+
+    // Find the product first.
+    return this.productService.getProductById(productId).pipe(
+      switchMap(product => {
+        if (!product) {
+          return throwError(
+            () => new Error('Product not found.'),
+          );
+        }
+
+        // Calculate the new stock.
+        const newStock = this.calculateNewStock(
+          product,
+          type,
+          quantity,
+        );
+
+        // Prevent negative stock.
+        if (newStock < 0) {
+          return throwError(
+            () => new Error('Insufficient stock for this operation.'),
+          );
+        }
+
+        // Update the product quantity.
+        return this.productService.updateProduct(productId, {
+          name: product.name,
+          categoryId: product.categoryId,
+          typeId: product.typeId,
+          trackingMode: product.trackingMode,
+          weight: product.weight,
+          quantity: newStock,
+          purchasePrice: product.purchasePrice,
+          salePrice: product.salePrice,
+          imageUrl: product.imageUrl,
+        }).pipe(
+          switchMap(updatedProduct => {
+            if (!updatedProduct) {
+              return throwError(
+                () => new Error('Unable to update product stock.'),
+              );
+            }
+
+            // Create the history record only after the update succeeds.
+            const operation: StockOperation = {
+              id: this.nextOperationId++,
+              productId: updatedProduct.id,
+              productName: updatedProduct.name,
+              barcode: updatedProduct.barcode,
+              type,
+              quantity,
+              previousStock: product.quantity,
+              newStock: updatedProduct.quantity,
+              createdAt: new Date().toISOString(),
+              notes,
+            };
+
+            this.operations.unshift(operation);
+
+            return of(operation);
+          }),
+        );
+      }),
     );
   }
 
-  submitOperation(): void {
-    this.successMessage = '';
-    this.errorMessage = '';
+  // Calculate stock according to operation type.
+  private calculateNewStock(
+    product: ProductResponse,
+    type: StockOperationType,
+    quantity: number,
+  ): number {
+    switch (type) {
+      case 'PURCHASE':
+      case 'MANUAL_ADD':
+        return product.quantity + quantity;
 
-    if (this.selectedProductId === null) {
-      this.errorMessage = 'Please select a product.';
-      return;
+      case 'SALE':
+      case 'MANUAL_REMOVE':
+        return product.quantity - quantity;
     }
-
-    if (!Number.isInteger(this.quantity) || this.quantity <= 0) {
-      this.errorMessage = 'Quantity must be a positive whole number.';
-      return;
-    }
-
-    this.isLoading = true;
-
-    this.stockOperationService
-      .createOperation(
-        this.selectedProductId,
-        this.operationType,
-        this.quantity,
-        this.notes.trim() || null,
-      )
-      .subscribe({
-        next: operation => {
-          this.successMessage =
-            `Stock updated successfully. New stock: ${operation.newStock}.`;
-
-          this.quantity = 1;
-          this.notes = '';
-          this.isLoading = false;
-
-          this.loadProducts();
-        },
-        error: error => {
-          this.errorMessage =
-            error?.message || 'Unable to record stock operation.';
-
-          this.isLoading = false;
-        },
-      });
-  }
-
-  formatPrice(price: number): string {
-    return `${price.toLocaleString('fr-MA', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })} DH`;
   }
 }

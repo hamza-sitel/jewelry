@@ -1,0 +1,159 @@
+
+<main class="details-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">INVENTORY / PRODUCTS</p>
+      <h1>Product details</h1>
+      <p class="page-description">
+        Complete information and stock activity for this product.
+      </p>
+    </div>
+
+    <a routerLink="/products" class="secondary-button">
+      Back to products
+    </a>
+  </header>
+
+  @if (isLoading) {
+    <section class="state-panel">
+      Loading product details...
+    </section>
+  } @else if (errorMessage) {
+    <section class="state-panel state-error">
+      {{ errorMessage }}
+    </section>
+  } @else if (product; as item) {
+    <section class="product-panel">
+      <div class="product-heading">
+        <div>
+          <p class="eyebrow">PRODUCT INFORMATION</p>
+          <h2>{{ item.name }}</h2>
+          <p class="barcode">{{ item.barcode }}</p>
+        </div>
+
+        <span
+          class="status-badge"
+          [class.status-inactive]="item.status !== 'ACTIVE'"
+        >
+          {{ item.status }}
+        </span>
+      </div>
+
+      <div class="details-grid">
+        <article class="detail-card">
+          <span>Category</span>
+          <strong>{{ item.categoryName }}</strong>
+        </article>
+
+        <article class="detail-card">
+          <span>Type</span>
+          <strong>{{ item.typeName }}</strong>
+        </article>
+
+        <article class="detail-card">
+          <span>Tracking mode</span>
+          <strong>{{ item.trackingMode }}</strong>
+        </article>
+
+        <article class="detail-card">
+          <span>Available quantity</span>
+          <strong>{{ item.quantity }} piece(s)</strong>
+        </article>
+
+        <article class="detail-card">
+          <span>Weight per piece</span>
+          <strong>{{ formatWeight(item.weight) }}</strong>
+        </article>
+
+        <article class="detail-card">
+          <span>Total recorded weight</span>
+          <strong>
+            @if (item.weight === null) {
+              Not specified
+            } @else {
+              {{ formatWeight(item.weight * item.quantity) }}
+            }
+          </strong>
+        </article>
+
+        <article class="detail-card">
+          <span>Purchase price</span>
+          <strong>{{ formatPrice(item.purchasePrice) }}</strong>
+        </article>
+
+        <article class="detail-card highlight">
+          <span>Sale price</span>
+          <strong>{{ formatPrice(item.salePrice) }}</strong>
+        </article>
+      </div>
+
+      <div class="actions">
+        <a
+          class="primary-button"
+          [routerLink]="['/products', item.id, 'edit']"
+        >
+          Edit product
+        </a>
+
+        <a
+          class="secondary-button"
+          routerLink="/stock-operation"
+        >
+          Stock operation
+        </a>
+
+        <a
+          class="secondary-button"
+          routerLink="/barcode"
+        >
+          Barcode scanner
+        </a>
+      </div>
+    </section>
+
+    <section class="history-panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">ACTIVITY</p>
+          <h2>Stock history</h2>
+        </div>
+
+        <span>{{ operations.length }} operations</span>
+      </div>
+
+      @if (operations.length === 0) {
+        <div class="empty-state">
+          No stock operations have been recorded for this product yet.
+        </div>
+      } @else {
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Operation</th>
+                <th>Quantity</th>
+                <th>Previous stock</th>
+                <th>New stock</th>
+                <th>Date</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (operation of operations; track operation.id) {
+                <tr>
+                  <td>{{ getOperationLabel(operation.type) }}</td>
+                  <td>{{ operation.quantity }}</td>
+                  <td>{{ operation.previousStock }}</td>
+                  <td>{{ operation.newStock }}</td>
+                  <td>{{ formatDate(operation.createdAt) }}</td>
+                  <td>{{ operation.notes || '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+</main>
