@@ -374,3 +374,28 @@ table {
     grid-column: auto;
   }
 }
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.details-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 12px;
+  border: 1px solid #d8c6aa;
+  border-radius: 7px;
+  color: #755b3e;
+  background: #fffaf2;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  transition: 0.2s ease;
+
+  &:hover {
+    background: #f2e8d8;
+    border-color: #b99b72;
+  }
+}

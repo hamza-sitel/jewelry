@@ -86,6 +86,26 @@
           <strong>{{ formatPrice(item.salePrice) }}</strong>
         </article>
       </div>
+      <div class="value-summary">
+        
+  <article class="value-card">
+    <span>Total purchase value</span>
+    <strong>{{ formatPrice(totalPurchaseValue) }}</strong>
+    <small>Current quantity × purchase price</small>
+  </article>
+
+  <article class="value-card">
+    <span>Potential sales value</span>
+    <strong>{{ formatPrice(totalSalesValue) }}</strong>
+    <small>Current quantity × sale price</small>
+  </article>
+
+  <article class="value-card profit-card">
+    <span>Expected gross profit</span>
+    <strong>{{ formatPrice(expectedGrossProfit) }}</strong>
+    <small>Potential sales value − purchase value</small>
+  </article>
+      </div>
 
       <div class="actions">
         <a

@@ -257,3 +257,47 @@ table {
     }
   }
 }
+
+.value-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.value-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid #e8dfd2;
+  border-radius: 10px;
+  background: #fff;
+
+  span {
+    color: #81766a;
+    font-size: 0.78rem;
+  }
+
+  strong {
+    color: #30271f;
+    font-size: 1.3rem;
+    overflow-wrap: anywhere;
+  }
+
+  small {
+    color: #81766a;
+    font-size: 0.72rem;
+  }
+}
+
+.profit-card {
+  border-color: #e4d0b7;
+  background: #f8f0e5;
+}
+
+@media (max-width: 700px) {
+  .value-summary {
+    grid-template-columns: 1fr;
+  }
+}

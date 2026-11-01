@@ -1,3 +1,4 @@
+
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -18,6 +19,10 @@ export interface ProductDataSource {
     id: number,
     request: UpdateProductRequest,
   ): Observable<ProductResponse | undefined>;
+
+  archive(id: number): Observable<ProductResponse | undefined>;
+
+  restore(id: number): Observable<ProductResponse | undefined>;
 }
 
 export const PRODUCT_DATA_SOURCE =

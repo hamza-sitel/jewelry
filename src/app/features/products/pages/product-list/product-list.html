@@ -181,13 +181,10 @@
                 </td>
 
                 <td class="quantity-cell">{{ product.quantity }}</td>
-
                 <td>{{ formatWeight(product.weight) }}</td>
-
                 <td class="price-cell">
                   {{ formatPrice(product.salePrice) }}
                 </td>
-
                 <td>
                   @if (product.quantity === 0) {
                     <span class="stock-badge out-of-stock">
@@ -205,13 +202,22 @@
                 </td>
 
                 <td>
-                  <a
-                    class="edit-button"
-                    [routerLink]="['/products', product.id, 'edit']"
-                  >
-                    Edit
-                  </a>
-                </td>
+  <div class="action-buttons">
+    <a
+      class="details-button"
+      [routerLink]="['/products', product.id]"
+    >
+      Details
+    </a>
+
+    <a
+      class="edit-button"
+      [routerLink]="['/products', product.id, 'edit']"
+    >
+      Edit
+    </a>
+  </div>
+</td>
               </tr>
             }
           </tbody>

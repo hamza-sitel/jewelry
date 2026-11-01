@@ -114,4 +114,19 @@ export class ProductDetails {
 
     return labels[type];
   }
+  get totalPurchaseValue(): number {
+  if (!this.product) return 0;
+
+  return this.product.quantity * this.product.purchasePrice;
+}
+
+get totalSalesValue(): number {
+  if (!this.product) return 0;
+
+  return this.product.quantity * this.product.salePrice;
+}
+
+get expectedGrossProfit(): number {
+  return this.totalSalesValue - this.totalPurchaseValue;
+}
 }
