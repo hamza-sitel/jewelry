@@ -1,6 +1,6 @@
 
 import { Injectable, inject } from '@angular/core';
-import { Observable, of, throwError, map, switchMap } from 'rxjs';
+import { Observable, throwError, switchMap } from 'rxjs';
 
 import { ProductService } from '../../products/product.service';
 import type { ProductResponse } from '../../products/product.model';
@@ -10,27 +10,27 @@ import type {
   StockOperationType,
 } from '../stock-operation.model';
 
+import { STOCK_OPERATION_DATA_SOURCE } from '../stock-operation-data-source';
+import type { StockOperationDataSource } from '../stock-operation-data-source';
+
 @Injectable({
   providedIn: 'root',
 })
 export class StockOperationService {
   private readonly productService = inject(ProductService);
 
-  private operations: StockOperation[] = [];
-  private nextOperationId = 1;
+  private readonly dataSource: StockOperationDataSource = inject(
+    STOCK_OPERATION_DATA_SOURCE,
+  );
 
   getOperations(): Observable<StockOperation[]> {
-    return of([...this.operations]);
+    return this.dataSource.getAll();
   }
 
   getOperationsByProduct(
     productId: number,
   ): Observable<StockOperation[]> {
-    const productOperations = this.operations.filter(
-      operation => operation.productId === productId,
-    );
-
-    return of([...productOperations]);
+    return this.dataSource.getByProduct(productId);
   }
 
   createOperation(
@@ -51,7 +51,6 @@ export class StockOperationService {
           return throwError(() => new Error('Product not found.'));
         }
 
-        // Archived products cannot receive stock operations.
         if (product.status === 'ARCHIVED') {
           return throwError(
             () =>
@@ -73,42 +72,37 @@ export class StockOperationService {
           );
         }
 
-        return this.productService
-          .updateProduct(productId, {
-            name: product.name,
-            categoryId: product.categoryId,
-            typeId: product.typeId,
-            trackingMode: product.trackingMode,
-            weight: product.weight,
-            quantity: newStock,
-            purchasePrice: product.purchasePrice,
-            salePrice: product.salePrice,
-            imageUrl: product.imageUrl,
-          })
-          .pipe(
-            map(updatedProduct => {
-              if (!updatedProduct) {
-                throw new Error('Unable to update product stock.');
-              }
+        return this.productService.updateProduct(productId, {
+          name: product.name,
+          categoryId: product.categoryId,
+          typeId: product.typeId,
+          trackingMode: product.trackingMode,
+          weight: product.weight,
+          quantity: newStock,
+          purchasePrice: product.purchasePrice,
+          salePrice: product.salePrice,
+          imageUrl: product.imageUrl,
+        }).pipe(
+          switchMap(updatedProduct => {
+            if (!updatedProduct) {
+              return throwError(
+                () => new Error('Unable to update product stock.'),
+              );
+            }
 
-              const operation: StockOperation = {
-                id: this.nextOperationId++,
-                productId: product.id,
-                productName: product.name,
-                barcode: product.barcode,
-                type,
-                quantity,
-                previousStock: product.quantity,
-                newStock: updatedProduct.quantity,
-                createdAt: new Date().toISOString(),
-                notes,
-              };
-
-              this.operations.unshift(operation);
-
-              return operation;
-            }),
-          );
+            return this.dataSource.create({
+              productId: product.id,
+              productName: product.name,
+              barcode: product.barcode,
+              type,
+              quantity,
+              previousStock: product.quantity,
+              newStock: updatedProduct.quantity,
+              createdAt: new Date().toISOString(),
+              notes,
+            });
+          }),
+        );
       }),
     );
   }

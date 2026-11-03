@@ -1,45 +1,59 @@
-import { Injectable } from '@angular/core';
+
+import { Injectable, inject } from '@angular/core';
 
 import type {
   ProductCategory,
   ProductType,
 } from './product.model';
 
+import { BrowserStorageService } from '../../core/services/browser-storage.service';
+
 @Injectable({
   providedIn: 'root',
 })
 export class ProductCatalogService {
-  private categories: ProductCategory[] = [
-    { id: 1, name: '18K Gold' },
-    { id: 2, name: '925 Silver' },
-    { id: 3, name: 'Steel' },
-    { id: 4, name: '800 Silver' },
-    { id: 5, name: 'Jewelry & Stones' },
-  ];
+  private readonly storage = inject(BrowserStorageService);
 
-  private types: ProductType[] = [
-    { id: 1, categoryId: 1, name: 'Ring' },
-    { id: 2, categoryId: 1, name: 'Bracelet' },
-    { id: 3, categoryId: 1, name: 'Chain' },
-    { id: 4, categoryId: 1, name: 'Earrings' },
-    { id: 5, categoryId: 1, name: 'Pendant' },
-    { id: 6, categoryId: 2, name: 'Ring' },
-    { id: 7, categoryId: 2, name: 'Bracelet' },
-    { id: 8, categoryId: 2, name: 'Necklace' },
-    { id: 9, categoryId: 2, name: 'Earrings' },
-    { id: 10, categoryId: 2, name: 'Chain' },
-    { id: 11, categoryId: 3, name: 'Bracelet' },
-    { id: 12, categoryId: 3, name: 'Necklace' },
-    { id: 13, categoryId: 3, name: 'Ring' },
-    { id: 14, categoryId: 3, name: 'Earrings' },
-    { id: 15, categoryId: 4, name: 'Ring' },
-    { id: 16, categoryId: 4, name: 'Bracelet' },
-    { id: 17, categoryId: 4, name: 'Earrings' },
-    { id: 18, categoryId: 5, name: 'Emerald' },
-    { id: 19, categoryId: 5, name: 'Ruby' },
-    { id: 20, categoryId: 5, name: 'Sapphire' },
-    { id: 21, categoryId: 5, name: 'Other Stone' },
-  ];
+  private readonly categoriesStorageKey = 'jewelry-stock.categories';
+  private readonly typesStorageKey = 'jewelry-stock.types';
+
+  private categories: ProductCategory[] = this.storage.get(
+    this.categoriesStorageKey,
+    [
+      { id: 1, name: '18K Gold' },
+      { id: 2, name: '925 Silver' },
+      { id: 3, name: 'Steel' },
+      { id: 4, name: '800 Silver' },
+      { id: 5, name: 'Jewelry & Stones' },
+    ],
+  );
+
+  private types: ProductType[] = this.storage.get(
+    this.typesStorageKey,
+    [
+      { id: 1, categoryId: 1, name: 'Ring' },
+      { id: 2, categoryId: 1, name: 'Bracelet' },
+      { id: 3, categoryId: 1, name: 'Chain' },
+      { id: 4, categoryId: 1, name: 'Earrings' },
+      { id: 5, categoryId: 1, name: 'Pendant' },
+      { id: 6, categoryId: 2, name: 'Ring' },
+      { id: 7, categoryId: 2, name: 'Bracelet' },
+      { id: 8, categoryId: 2, name: 'Necklace' },
+      { id: 9, categoryId: 2, name: 'Earrings' },
+      { id: 10, categoryId: 2, name: 'Chain' },
+      { id: 11, categoryId: 3, name: 'Bracelet' },
+      { id: 12, categoryId: 3, name: 'Necklace' },
+      { id: 13, categoryId: 3, name: 'Ring' },
+      { id: 14, categoryId: 3, name: 'Earrings' },
+      { id: 15, categoryId: 4, name: 'Ring' },
+      { id: 16, categoryId: 4, name: 'Bracelet' },
+      { id: 17, categoryId: 4, name: 'Earrings' },
+      { id: 18, categoryId: 5, name: 'Emerald' },
+      { id: 19, categoryId: 5, name: 'Ruby' },
+      { id: 20, categoryId: 5, name: 'Sapphire' },
+      { id: 21, categoryId: 5, name: 'Other Stone' },
+    ],
+  );
 
   getCategories(): ProductCategory[] {
     return this.categories.map(category => ({ ...category }));
@@ -89,6 +103,7 @@ export class ProductCatalogService {
     };
 
     this.categories.push(category);
+    this.saveCategories();
 
     return { ...category };
   }
@@ -110,6 +125,8 @@ export class ProductCatalogService {
     }
 
     category.name = normalizedName;
+    this.saveCategories();
+
     return true;
   }
 
@@ -135,6 +152,7 @@ export class ProductCatalogService {
     };
 
     this.types.push(type);
+    this.saveTypes();
 
     return { ...type };
   }
@@ -157,7 +175,17 @@ export class ProductCatalogService {
     }
 
     type.name = normalizedName;
+    this.saveTypes();
+
     return true;
+  }
+
+  private saveCategories(): void {
+    this.storage.set(this.categoriesStorageKey, this.categories);
+  }
+
+  private saveTypes(): void {
+    this.storage.set(this.typesStorageKey, this.types);
   }
 
   private nextId(items: { id: number }[]): number {
