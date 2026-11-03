@@ -1,0 +1,419 @@
+<div class="reports-page">
+  <header class="page-heading">
+    <div>
+      <span class="eyebrow">BUSINESS OVERVIEW</span>
+      <h2>Reports</h2>
+      <p>Monitor your inventory and review stock activity.</p>
+    </div>
+
+    <button
+      class="button button-primary"
+      type="button"
+      (click)="downloadExcel()"
+      [disabled]="isLoading || !!errorMessage"
+    >
+      <span>↓</span>
+      Export Excel
+    </button>
+  </header>
+
+  @if (isLoading) {
+    <div class="state-card">
+      <div class="loading-indicator"></div>
+      <p>Loading reports...</p>
+    </div>
+  } @else if (errorMessage) {
+    <div class="state-card error-state">
+      <h3>Unable to load reports</h3>
+      <p>{{ errorMessage }}</p>
+      <button
+        class="button button-secondary"
+        type="button"
+        (click)="reloadReports()"
+      >
+        Try again
+      </button>
+    </div>
+  } @else {
+    <nav class="report-tabs" aria-label="Report types">
+      <button
+        type="button"
+        class="tab-button"
+        [class.active]="activeTab === 'STOCK'"
+        (click)="setActiveTab('STOCK')"
+      >
+        <span>◇</span>
+        Stock report
+      </button>
+
+      <button
+        type="button"
+        class="tab-button"
+        [class.active]="activeTab === 'OPERATIONS'"
+        (click)="setActiveTab('OPERATIONS')"
+      >
+        <span>⇄</span>
+        Operation report
+      </button>
+    </nav>
+
+    @if (activeTab === 'STOCK') {
+      <section class="report-section">
+        <div class="section-heading">
+          <div>
+            <h3>Inventory overview</h3>
+            <p>Current quantities and estimated inventory values.</p>
+          </div>
+
+          <button
+            class="button button-secondary"
+            type="button"
+            (click)="downloadStockCsv()"
+          >
+            ↓ Export CSV
+          </button>
+        </div>
+
+        <div class="summary-grid">
+          <article class="summary-card">
+            <span class="summary-label">Products</span>
+            <strong>{{ totalProducts }}</strong>
+            <small>Matching products</small>
+          </article>
+
+          <article class="summary-card">
+            <span class="summary-label">Total units</span>
+            <strong>{{ totalUnits }}</strong>
+            <small>Current quantity</small>
+          </article>
+
+          <article class="summary-card">
+            <span class="summary-label">Total weight</span>
+            <strong>{{ totalWeight.toFixed(2) }} g</strong>
+            <small>Products with recorded weight</small>
+          </article>
+
+          <article class="summary-card">
+            <span class="summary-label">Purchase value</span>
+            <strong>{{ formatPrice(totalPurchaseValue) }}</strong>
+            <small>Estimated current stock value</small>
+          </article>
+
+          <article class="summary-card">
+            <span class="summary-label">Sale value</span>
+            <strong>{{ formatPrice(totalSaleValue) }}</strong>
+            <small>Potential value at current sale prices</small>
+          </article>
+
+          <article class="summary-card">
+            <span class="summary-label">Expected gross margin</span>
+            <strong>{{ formatPrice(expectedGrossProfit) }}</strong>
+            <small>Sale value minus purchase value</small>
+          </article>
+        </div>
+
+        <div class="filters-panel">
+          <div class="filters-heading">
+            <div>
+              <h3>Stock filters</h3>
+              <p>Refine the products included in this report.</p>
+            </div>
+
+            <button
+              class="text-button"
+              type="button"
+              (click)="clearStockFilters()"
+            >
+              Clear filters
+            </button>
+          </div>
+
+          <div class="filters-grid">
+            <label class="filter-field search-field">
+              <span>Search product</span>
+              <input
+                type="search"
+                [(ngModel)]="stockSearch"
+                placeholder="Name, barcode, category..."
+              />
+            </label>
+
+            <label class="filter-field">
+              <span>Category</span>
+              <select [(ngModel)]="selectedCategory">
+                <option value="ALL">All categories</option>
+                @for (category of categoryOptions; track category) {
+                  <option [value]="category">{{ category }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="filter-field">
+              <span>Product status</span>
+              <select [(ngModel)]="selectedProductStatus">
+                <option value="ACTIVE">Active</option>
+                <option value="ARCHIVED">Archived</option>
+                <option value="ALL">All products</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="table-panel">
+          <div class="table-heading">
+            <div>
+              <h3>Stock details</h3>
+              <p>{{ filteredStockProducts.length }} products found</p>
+            </div>
+          </div>
+
+          @if (filteredStockProducts.length > 0) {
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Barcode</th>
+                    <th>Category</th>
+                    <th>Quantity</th>
+                    <th>Weight / piece</th>
+                    <th>Total weight</th>
+                    <th>Purchase price</th>
+                    <th>Sale price</th>
+                    <th>Purchase value</th>
+                    <th>Sale value</th>
+                    <th>Stock status</th>
+                    <th>Product status</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  @for (product of filteredStockProducts; track product.id) {
+                    <tr>
+                      <td class="product-name">{{ product.name }}</td>
+                      <td class="mono">{{ product.barcode }}</td>
+                      <td>{{ product.categoryName }}</td>
+                      <td>{{ product.quantity }}</td>
+                      <td>{{ formatWeight(product) }}</td>
+                      <td>{{ formatTotalWeight(product) }}</td>
+                      <td>{{ formatPrice(product.purchasePrice) }}</td>
+                      <td>{{ formatPrice(product.salePrice) }}</td>
+                      <td>
+                        {{ formatPrice(product.quantity * product.purchasePrice) }}
+                      </td>
+                      <td>
+                        {{ formatPrice(product.quantity * product.salePrice) }}
+                      </td>
+                      <td>
+                        <span
+                          class="status-badge"
+                          [class.status-danger]="product.quantity === 0"
+                          [class.status-warning]="
+                            product.quantity > 0 && product.quantity <= 3
+                          "
+                          [class.status-success]="product.quantity > 3"
+                        >
+                          {{ getStockStatus(product.quantity) }}
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          class="status-badge"
+                          [class.status-success]="product.status === 'ACTIVE'"
+                          [class.status-muted]="product.status === 'ARCHIVED'"
+                        >
+                          {{ product.status }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="empty-state">
+              <span>◇</span>
+              <h3>No products found</h3>
+              <p>Try changing your search or filters.</p>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    @if (activeTab === 'OPERATIONS') {
+      <section class="report-section">
+        <div class="section-heading">
+          <div>
+            <h3>Stock activity overview</h3>
+            <p>Review recorded purchases, sales and manual adjustments.</p>
+          </div>
+
+          <button
+            class="button button-secondary"
+            type="button"
+            (click)="downloadOperationsCsv()"
+          >
+            ↓ Export CSV
+          </button>
+        </div>
+
+        <div class="summary-grid operation-summary">
+          <article class="summary-card">
+            <span class="summary-label">Operations</span>
+            <strong>{{ totalOperations }}</strong>
+            <small>Matching records</small>
+          </article>
+
+          <article class="summary-card">
+            <span class="summary-label">Total units moved</span>
+            <strong>{{ totalOperationQuantity }}</strong>
+            <small>Across matching operations</small>
+          </article>
+
+          <article class="summary-card">
+            <span class="summary-label">Sales quantity</span>
+            <strong>{{ totalSalesQuantity }}</strong>
+            <small>Units sold</small>
+          </article>
+
+          <article class="summary-card">
+            <span class="summary-label">Purchase quantity</span>
+            <strong>{{ totalPurchasesQuantity }}</strong>
+            <small>Units purchased</small>
+          </article>
+
+          <article class="summary-card">
+            <span class="summary-label">Manual additions</span>
+            <strong>{{ totalManualAdditions }}</strong>
+            <small>Units added manually</small>
+          </article>
+
+          <article class="summary-card">
+            <span class="summary-label">Manual removals</span>
+            <strong>{{ totalManualRemovals }}</strong>
+            <small>Units removed manually</small>
+          </article>
+        </div>
+
+        <div class="filters-panel">
+          <div class="filters-heading">
+            <div>
+              <h3>Operation filters</h3>
+              <p>Search and filter the recorded stock activity.</p>
+            </div>
+
+            <button
+              class="text-button"
+              type="button"
+              (click)="clearOperationFilters()"
+            >
+              Clear filters
+            </button>
+          </div>
+
+          <div class="filters-grid operation-filters">
+            <label class="filter-field search-field">
+              <span>Search</span>
+              <input
+                type="search"
+                [(ngModel)]="operationSearch"
+                placeholder="Product, barcode or notes..."
+              />
+            </label>
+
+            <label class="filter-field">
+              <span>Operation type</span>
+              <select [(ngModel)]="selectedOperationType">
+                <option value="ALL">All operations</option>
+                <option value="PURCHASE">Purchase</option>
+                <option value="SALE">Sale</option>
+                <option value="MANUAL_ADD">Manual addition</option>
+                <option value="MANUAL_REMOVE">Manual removal</option>
+              </select>
+            </label>
+
+            <label class="filter-field">
+              <span>From date</span>
+              <input type="date" [(ngModel)]="dateFrom" />
+            </label>
+
+            <label class="filter-field">
+              <span>To date</span>
+              <input type="date" [(ngModel)]="dateTo" />
+            </label>
+          </div>
+        </div>
+
+        <div class="table-panel">
+          <div class="table-heading">
+            <div>
+              <h3>Operation history</h3>
+              <p>{{ filteredOperations.length }} operations found</p>
+            </div>
+          </div>
+
+          @if (filteredOperations.length > 0) {
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Product</th>
+                    <th>Barcode</th>
+                    <th>Operation</th>
+                    <th>Quantity</th>
+                    <th>Previous stock</th>
+                    <th>New stock</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  @for (operation of filteredOperations; track operation.id) {
+                    <tr>
+                      <td class="date-cell">
+                        {{ formatDate(operation.createdAt) }}
+                      </td>
+                      <td class="product-name">{{ operation.productName }}</td>
+                      <td class="mono">{{ operation.barcode }}</td>
+                      <td>
+                        <span
+                          class="status-badge operation-badge"
+                          [class.status-danger]="
+                            operation.type === 'SALE' ||
+                            operation.type === 'MANUAL_REMOVE'
+                          "
+                          [class.status-success]="
+                            operation.type === 'PURCHASE' ||
+                            operation.type === 'MANUAL_ADD'
+                          "
+                        >
+                          {{ getOperationLabel(operation.type) }}
+                        </span>
+                      </td>
+                      <td>{{ operation.quantity }}</td>
+                      <td>{{ operation.previousStock }}</td>
+                      <td>{{ operation.newStock }}</td>
+                      <td class="notes-cell">
+                        {{ operation.notes || '—' }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="empty-state">
+              <span>◷</span>
+              <h3>No operations found</h3>
+              <p>
+                Record a stock operation or change your filters to see results.
+              </p>
+            </div>
+          }
+        </div>
+      </section>
+    }
+  }
+</div>1

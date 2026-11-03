@@ -1,6 +1,6 @@
 
 import { Injectable, inject } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, of, throwError, map, switchMap } from 'rxjs';
 
 import { ProductService } from '../../products/product.service';
 import type { ProductResponse } from '../../products/product.model';
@@ -45,72 +45,72 @@ export class StockOperationService {
       );
     }
 
-    return new Observable<StockOperation>(subscriber => {
-      this.productService.getProductById(productId).subscribe({
-        next: product => {
-          if (!product) {
-            subscriber.error(new Error('Product not found.'));
-            return;
-          }
+    return this.productService.getProductById(productId).pipe(
+      switchMap(product => {
+        if (!product) {
+          return throwError(() => new Error('Product not found.'));
+        }
 
-          const newStock = this.calculateNewStock(
-            product,
-            type,
-            quantity,
+        // Archived products cannot receive stock operations.
+        if (product.status === 'ARCHIVED') {
+          return throwError(
+            () =>
+              new Error(
+                'This product is archived. Restore it before performing stock operations.',
+              ),
           );
+        }
 
-          if (newStock < 0) {
-            subscriber.error(
-              new Error('Insufficient stock for this operation.'),
-            );
-            return;
-          }
+        const newStock = this.calculateNewStock(
+          product,
+          type,
+          quantity,
+        );
 
-          this.productService
-            .updateProduct(productId, {
-              name: product.name,
-              categoryId: product.categoryId,
-              typeId: product.typeId,
-              trackingMode: product.trackingMode,
-              weight: product.weight,
-              quantity: newStock,
-              purchasePrice: product.purchasePrice,
-              salePrice: product.salePrice,
-              imageUrl: product.imageUrl,
-            })
-            .subscribe({
-              next: updatedProduct => {
-                if (!updatedProduct) {
-                  subscriber.error(
-                    new Error('Unable to update product stock.'),
-                  );
-                  return;
-                }
+        if (newStock < 0) {
+          return throwError(
+            () => new Error('Insufficient stock for this operation.'),
+          );
+        }
 
-                const operation: StockOperation = {
-                  id: this.nextOperationId++,
-                  productId: product.id,
-                  productName: product.name,
-                  barcode: product.barcode,
-                  type,
-                  quantity,
-                  previousStock: product.quantity,
-                  newStock,
-                  createdAt: new Date().toISOString(),
-                  notes,
-                };
+        return this.productService
+          .updateProduct(productId, {
+            name: product.name,
+            categoryId: product.categoryId,
+            typeId: product.typeId,
+            trackingMode: product.trackingMode,
+            weight: product.weight,
+            quantity: newStock,
+            purchasePrice: product.purchasePrice,
+            salePrice: product.salePrice,
+            imageUrl: product.imageUrl,
+          })
+          .pipe(
+            map(updatedProduct => {
+              if (!updatedProduct) {
+                throw new Error('Unable to update product stock.');
+              }
 
-                this.operations.unshift(operation);
+              const operation: StockOperation = {
+                id: this.nextOperationId++,
+                productId: product.id,
+                productName: product.name,
+                barcode: product.barcode,
+                type,
+                quantity,
+                previousStock: product.quantity,
+                newStock: updatedProduct.quantity,
+                createdAt: new Date().toISOString(),
+                notes,
+              };
 
-                subscriber.next(operation);
-                subscriber.complete();
-              },
-              error: error => subscriber.error(error),
-            });
-        },
-        error: error => subscriber.error(error),
-      });
-    });
+              this.operations.unshift(operation);
+
+              return operation;
+            }),
+          );
+      }),
+    );
   }
 
   private calculateNewStock(

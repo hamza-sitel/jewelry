@@ -39,4 +39,11 @@ export class ProductService {
   ): Observable<ProductResponse | undefined> {
     return this.dataSource.update(id, request);
   }
+  archiveProduct(id: number): Observable<ProductResponse | undefined> {
+  return this.dataSource.archive(id);
+}
+
+restoreProduct(id: number): Observable<ProductResponse | undefined> {
+  return this.dataSource.restore(id);
+}
 }

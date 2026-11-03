@@ -77,26 +77,25 @@ export class MockProductDataSource implements ProductDataSource {
     // The product ID, barcode and creation date remain unchanged.
     return of(this.withCurrentNames(product));
   }
-  archive(id: number): Observable<ProductResponse | undefined> {
-  const product = MOCK_PRODUCTS.find(item => item.id === id);
-
-  if (!product) {
-    return of(undefined);
-  }
-
-  product.status = 'ARCHIVED';
-
-  return of(this.withCurrentNames(product));
+   archive(id: number): Observable<ProductResponse | undefined> {
+  return this.changeStatus(id, 'ARCHIVED');
 }
 
 restore(id: number): Observable<ProductResponse | undefined> {
+  return this.changeStatus(id, 'ACTIVE');
+}
+
+private changeStatus(
+  id: number,
+  status: ProductResponse['status'],
+): Observable<ProductResponse | undefined> {
   const product = MOCK_PRODUCTS.find(item => item.id === id);
 
   if (!product) {
     return of(undefined);
   }
 
-  product.status = 'ACTIVE';
+  product.status = status;
 
   return of(this.withCurrentNames(product));
 }

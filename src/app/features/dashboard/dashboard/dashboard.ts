@@ -1,6 +1,8 @@
+
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DecimalPipe } from '@angular/common';
+
 import type { ProductResponse } from '../../products/product.model';
 import { ProductService } from '../../products/product.service';
 
@@ -23,6 +25,7 @@ export class Dashboard implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   products: ProductResponse[] = [];
+
   isLoading = false;
   errorMessage = '';
 
@@ -59,42 +62,91 @@ export class Dashboard implements OnInit {
       });
   }
 
+  // Product records include both active and archived products.
   get totalProducts(): number {
     return this.products.length;
   }
 
-  get totalUnits(): number {
-    return this.products.reduce((sum, product) => sum + product.quantity, 0);
+  // Only active products participate in normal inventory calculations.
+  get activeProducts(): ProductResponse[] {
+    return this.products.filter(product => product.status === 'ACTIVE');
   }
 
-  get lowStockCount(): number {
+  get activeProductsCount(): number {
+    return this.activeProducts.length;
+  }
+
+  get archivedProductsCount(): number {
     return this.products.filter(
-      product => product.quantity > 0 && product.quantity <= 3
+      product => product.status === 'ARCHIVED',
     ).length;
   }
 
-  get inventorySaleValue(): number {
-    return this.products.reduce(
-      (sum, product) => sum + product.quantity * product.salePrice,
-      0
+  get totalUnits(): number {
+    return this.activeProducts.reduce(
+      (sum, product) => sum + product.quantity,
+      0,
     );
+  }
+
+  // Counts product records with 1–3 pieces, not individual pieces.
+  get lowStockCount(): number {
+    return this.activeProducts.filter(
+      product => product.quantity > 0 && product.quantity <= 10,
+    ).length;
+  }
+
+  // Counts active product records whose quantity is zero.
+  get outOfStockCount(): number {
+    return this.activeProducts.filter(
+      product => product.quantity === 0,
+    ).length;
+  }
+
+  get inventoryPurchaseValue(): number {
+    return this.activeProducts.reduce(
+      (sum, product) =>
+        sum + product.quantity * product.purchasePrice,
+      0,
+    );
+  }
+
+  get inventorySaleValue(): number {
+    return this.activeProducts.reduce(
+      (sum, product) =>
+        sum + product.quantity * product.salePrice,
+      0,
+    );
+  }
+
+  // Potential margin on the stock currently held.
+  // This is not profit already earned from completed sales.
+  get expectedGrossProfit(): number {
+    return this.inventorySaleValue - this.inventoryPurchaseValue;
   }
 
   get recordedTotalWeight(): number {
-    return this.products.reduce(
+    return this.activeProducts.reduce(
       (sum, product) =>
-        sum + (product.weight === null ? 0 : product.weight * product.quantity),
-      0
+        sum +
+        (product.weight === null
+          ? 0
+          : product.weight * product.quantity),
+      0,
     );
   }
-
+// ! 
   get categoryMetrics(): CategoryMetric[] {
     const counts = new Map<string, number>();
 
-    for (const product of this.products) {
+    for (const product of this.activeProducts) {
+      if (product.quantity <= 0) {
+        continue;
+      }
+
       counts.set(
         product.categoryName,
-        (counts.get(product.categoryName) ?? 0) + product.quantity
+        (counts.get(product.categoryName) ?? 0) + product.quantity,
       );
     }
 
@@ -128,7 +180,10 @@ export class Dashboard implements OnInit {
   }
 
   get highestCategoryCount(): number {
-    return Math.max(1, ...this.categoryMetrics.map(metric => metric.count));
+    return Math.max(
+      1,
+      ...this.categoryMetrics.map(metric => metric.count),
+    );
   }
 
   formatPrice(value: number): string {

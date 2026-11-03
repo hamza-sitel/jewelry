@@ -1,4 +1,3 @@
-
 <main class="scan-page">
   <header class="page-header">
     <div>
@@ -162,7 +161,6 @@
         </div>
       </div>
 
-      <!-- Stock operation form -->
       <section class="scan-operation">
         <div class="operation-heading">
           <div>
@@ -171,6 +169,12 @@
             <p>Update the inventory for this scanned product.</p>
           </div>
         </div>
+
+        @if (isScannedProductArchived) {
+          <div class="message message-error" role="alert">
+            This product is archived. Restore it before performing stock operations.
+          </div>
+        }
 
         <form (ngSubmit)="submitStockOperation()">
           <div class="operation-form-grid">
@@ -181,7 +185,7 @@
                 id="scan-operation-type"
                 name="scanOperationType"
                 [(ngModel)]="operationType"
-                [disabled]="isSaving"
+                [disabled]="isSaving || isScannedProductArchived"
               >
                 <option value="SALE">Sale — decrease stock</option>
                 <option value="PURCHASE">Purchase — increase stock</option>
@@ -200,7 +204,7 @@
                 min="1"
                 step="1"
                 [(ngModel)]="operationQuantity"
-                [disabled]="isSaving"
+                [disabled]="isSaving || isScannedProductArchived"
                 required
               />
             </div>
@@ -216,7 +220,7 @@
               name="scanOperationNotes"
               rows="3"
               [(ngModel)]="operationNotes"
-              [disabled]="isSaving"
+              [disabled]="isSaving || isScannedProductArchived"
               placeholder="Add a note about this operation..."
             ></textarea>
           </div>
@@ -236,7 +240,7 @@
           <button
             type="submit"
             class="primary-button operation-submit"
-            [disabled]="isSaving"
+            [disabled]="isSaving || isScannedProductArchived"
           >
             {{ isSaving ? 'Saving operation...' : 'Save stock operation' }}
           </button>

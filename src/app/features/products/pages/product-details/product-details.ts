@@ -23,6 +23,7 @@ export class ProductDetails {
   private readonly destroyRef = inject(DestroyRef);
 
   product: ProductResponse | null = null;
+  isUpdatingStatus = false;
   operations: StockOperation[] = [];
 
   isLoading = true;
@@ -114,19 +115,71 @@ export class ProductDetails {
 
     return labels[type];
   }
+  archiveProduct(): void {
+  if (!this.product || this.isUpdatingStatus) {
+    return;
+  }
+
+  this.isUpdatingStatus = true;
+
+  this.productService
+    .archiveProduct(this.product.id)
+    .pipe(takeUntilDestroyed(this.destroyRef))
+    .subscribe({
+      next: product => {
+        if (product) {
+          this.product = product;
+        }
+
+        this.isUpdatingStatus = false;
+      },
+      error: () => {
+        this.errorMessage = 'Unable to archive product.';
+        this.isUpdatingStatus = false;
+      },
+    });
+}
+
+
+restoreProduct(): void {
+  if (!this.product || this.isUpdatingStatus) {
+    return;  }
+
+  this.isUpdatingStatus = true;
+
+  this.productService
+    .restoreProduct(this.product.id)
+    .pipe(takeUntilDestroyed(this.destroyRef))
+    .subscribe({
+      next: product => {
+        if (product) {
+          this.product = product;
+        }
+
+        this.isUpdatingStatus = false;
+      },
+      error: () => {
+        this.errorMessage = 'Unable to restore product.';
+        this.isUpdatingStatus = false;
+      },
+    });
+}
+
+
   get totalPurchaseValue(): number {
   if (!this.product) return 0;
 
   return this.product.quantity * this.product.purchasePrice;
-}
+  }
 
-get totalSalesValue(): number {
+  get totalSalesValue(): number {
   if (!this.product) return 0;
 
   return this.product.quantity * this.product.salePrice;
+  }
+
+  get expectedGrossProfit(): number {
+  return this.totalSalesValue - this.totalPurchaseValue;
+  } 
 }
 
-get expectedGrossProfit(): number {
-  return this.totalSalesValue - this.totalPurchaseValue;
-}
-}

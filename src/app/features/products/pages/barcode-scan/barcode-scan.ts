@@ -51,6 +51,10 @@ export class BarcodeScan implements AfterViewInit {
     this.focusBarcodeInput();
   }
 
+  get isScannedProductArchived(): boolean {
+    return this.scannedProduct?.status === 'ARCHIVED';
+  }
+
   searchBarcode(): void {
     const barcode = this.barcodeValue.trim().toUpperCase();
 
@@ -69,13 +73,19 @@ export class BarcodeScan implements AfterViewInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: products => {
-          this.scannedProduct =
+          const product =
             products.find(
-              product => product.barcode.toUpperCase() === barcode,
+              item => item.barcode.toUpperCase() === barcode,
             ) ?? null;
 
-          if (!this.scannedProduct) {
-            this.errorMessage = `No product found for barcode "${barcode}".`;
+          this.scannedProduct = product;
+
+          if (!product) {
+            this.errorMessage =
+              `No product found for barcode "${barcode}".`;
+          } else if (product.status === 'ARCHIVED') {
+            this.operationErrorMessage =
+              'This product is archived. Restore it before performing stock operations.';
           }
 
           this.isSearching = false;
@@ -97,6 +107,12 @@ export class BarcodeScan implements AfterViewInit {
 
     if (!this.scannedProduct) {
       this.operationErrorMessage = 'Please scan a product first.';
+      return;
+    }
+
+    if (this.isScannedProductArchived) {
+      this.operationErrorMessage =
+        'This product is archived. Restore it before performing stock operations.';
       return;
     }
 
@@ -186,4 +202,5 @@ export class BarcodeScan implements AfterViewInit {
   private focusBarcodeInput(): void {
     this.barcodeInput?.nativeElement.focus();
   }
+  
 }

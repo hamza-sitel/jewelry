@@ -15,6 +15,7 @@ import { ProductService } from '../../product.service';
 import { ProductCatalogService } from '../../product-catalog.service';
 
 type StockFilter = 'ALL' | 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
+type StatusFilter = 'ALL' | 'ACTIVE' | 'ARCHIVED';
 
 @Component({
   selector: 'app-product-list',
@@ -35,6 +36,7 @@ export class ProductList implements OnInit {
   selectedTypeId: number | 'ALL' = 'ALL';
   selectedTrackingMode: ProductTrackingMode | 'ALL' = 'ALL';
   selectedStockFilter: StockFilter = 'ALL';
+  selectedStatus: StatusFilter = 'ALL';
 
   isLoading = false;
   errorMessage = '';
@@ -91,12 +93,17 @@ export class ProductList implements OnInit {
         matchesStock = product.quantity === 0;
       }
 
+      const matchesStatus =
+        this.selectedStatus === 'ALL' ||
+        product.status === this.selectedStatus;
+
       return (
         matchesSearch &&
         matchesCategory &&
         matchesType &&
         matchesTracking &&
-        matchesStock
+        matchesStock &&
+        matchesStatus
       );
     });
   }
@@ -131,6 +138,7 @@ export class ProductList implements OnInit {
     this.selectedTypeId = 'ALL';
     this.selectedTrackingMode = 'ALL';
     this.selectedStockFilter = 'ALL';
+    this.selectedStatus = 'ALL';
   }
 
   formatPrice(price: number): string {

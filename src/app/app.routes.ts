@@ -61,6 +61,12 @@ export const routes: Routes = [
         path: 'stock-history',
         component: StockHistory,
       },
+      {
+        path: 'reports',
+        loadComponent: () =>      
+          import('./features/reports/reports')    
+            .then(m =>m.Reports),
+},
     ],
   },
   {

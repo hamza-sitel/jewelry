@@ -35,35 +35,90 @@
       <span class="live-label"><span></span> MOCK DATA</span>
     </section>
 
-    <section class="dashboard-metrics">
-      <article class="metric-card">
-        <span class="metric-topline">PRODUCT RECORDS <span>01</span></span>
-        <strong>{{ totalProducts }}</strong>
-        <p>Distinct products and models</p>
-        <div class="metric-bottom"><span class="metric-line"></span></div>
-      </article>
+  
+<section class="dashboard-metrics">
+  <article class="metric-card">
+    <span class="metric-topline">PRODUCT RECORDS <span>01</span></span>
+    <strong>{{ totalProducts }}</strong>
+    <p>All active and archived product records</p>
+    <div class="metric-bottom">
+      <span class="metric-line"></span>
+    </div>
+  </article>
 
-      <article class="metric-card">
-        <span class="metric-topline">TOTAL PIECES <span>02</span></span>
-        <strong>{{ totalUnits }}</strong>
-        <p>Pieces recorded in stock</p>
-        <div class="metric-bottom"><span class="metric-line gold-line"></span></div>
-      </article>
+  <article class="metric-card">
+    <span class="metric-topline">ACTIVE PRODUCTS <span>02</span></span>
+    <strong>{{ activeProductsCount }}</strong>
+    <p>Products available for stock operations</p>
+    <div class="metric-bottom">
+      <span class="metric-line green-line"></span>
+    </div>
+  </article>
 
-      <article class="metric-card">
-        <span class="metric-topline">SALE VALUE <span>03</span></span>
-        <strong class="metric-money">{{ formatPrice(inventorySaleValue) }}</strong>
-        <p>Estimated value at listed sale prices</p>
-        <div class="metric-bottom"><span class="metric-line green-line"></span></div>
-      </article>
+  <article class="metric-card">
+    <span class="metric-topline">ARCHIVED PRODUCTS <span>03</span></span>
+    <strong>{{ archivedProductsCount }}</strong>
+    <p>Archived records retained in the system</p>
+    <div class="metric-bottom">
+      <span class="metric-line terracotta-line"></span>
+    </div>
+  </article>
 
-      <article class="metric-card">
-        <span class="metric-topline">LOW STOCK <span>04</span></span>
-        <strong>{{ lowStockCount }}</strong>
-        <p>Product records with 1–3 pieces</p>
-        <div class="metric-bottom"><span class="metric-line terracotta-line"></span></div>
-      </article>
-    </section>
+  <article class="metric-card">
+    <span class="metric-topline">TOTAL ACTIVE PIECES <span>04</span></span>
+    <strong>{{ totalUnits }}</strong>
+    <p>Pieces belonging to active products</p>
+    <div class="metric-bottom">
+      <span class="metric-line gold-line"></span>
+    </div>
+  </article>
+
+  <article class="metric-card">
+    <span class="metric-topline">PURCHASE VALUE <span>05</span></span>
+    <strong class="metric-money">{{ formatPrice(inventoryPurchaseValue) }}</strong>
+    <p>Estimated purchase value of active stock</p>
+    <div class="metric-bottom">
+      <span class="metric-line"></span>
+    </div>
+  </article>
+
+  <article class="metric-card">
+    <span class="metric-topline">POTENTIAL SALES VALUE <span>06</span></span>
+    <strong class="metric-money">{{ formatPrice(inventorySaleValue) }}</strong>
+    <p>Estimated value at listed sale prices</p>
+    <div class="metric-bottom">
+      <span class="metric-line green-line"></span>
+    </div>
+  </article>
+
+  <article class="metric-card">
+    <span class="metric-topline">EXPECTED GROSS PROFIT <span>07</span></span>
+    <strong class="metric-money">{{ formatPrice(expectedGrossProfit) }}</strong>
+    <p>Potential margin on the current active stock</p>
+    <div class="metric-bottom">
+      <span class="metric-line gold-line"></span>
+    </div>
+  </article>
+
+  <article class="metric-card">
+    <span class="metric-topline">LOW STOCK <span>08</span></span>
+    <strong>{{ lowStockCount }}</strong>
+    <p>Active product records with 1–3 pieces</p>
+    <div class="metric-bottom">
+      <span class="metric-line terracotta-line"></span>
+    </div>
+  </article>
+
+  <article class="metric-card">
+    <span class="metric-topline">OUT OF STOCK <span>09</span></span>
+    <strong>{{ outOfStockCount }}</strong>
+    <p>Active product records with zero pieces</p>
+    <div class="metric-bottom">
+      <span class="metric-line terracotta-line"></span>
+    </div>
+  </article>
+</section>
+
 
     <section class="charts-grid">
       <article class="chart-card category-card">
@@ -116,7 +171,7 @@
         </div>
 
         @if (categoryMetrics.length === 0) {
-          <div class="chart-empty">Add products to see this chart.</div>
+          <div class="chart-empty">No active stock to display yet.</div>
         } @else {
           <div class="bar-chart">
             @for (metric of categoryMetrics; track metric.name) {
@@ -174,7 +229,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (product of products.slice().reverse().slice(0, 5); track product.id) {
+            @for (product of activeProducts.slice().reverse().slice(0, 5); track product.id) {
               <tr>
                 <td>
                   <div class="recent-product">
