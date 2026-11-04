@@ -1,3 +1,4 @@
+
 <section class="product-form-page">
   <header class="page-header">
     <div>
@@ -118,7 +119,11 @@
 
         <label class="field">
           <span>Tracking mode</span>
-          <select name="trackingMode" [(ngModel)]="trackingMode">
+          <select
+            name="trackingMode"
+            [(ngModel)]="trackingMode"
+            (ngModelChange)="onTrackingModeChange()"
+          >
             <option value="INDIVIDUAL">Individual piece</option>
             <option value="QUANTITY">Quantity-based stock</option>
           </select>
@@ -148,9 +153,15 @@
             min="0.001"
             step="0.001"
             placeholder="Leave empty if not weighed"
+            [disabled]="trackingMode === 'INDIVIDUAL'"
           />
+
           <small>
-            Total recorded weight is the weight per piece multiplied by quantity.
+            @if (trackingMode === 'INDIVIDUAL') {
+              Individual-piece products cannot have a recorded weight.
+            } @else {
+              Total recorded weight is the weight per piece multiplied by quantity.
+            }
           </small>
         </label>
       </section>

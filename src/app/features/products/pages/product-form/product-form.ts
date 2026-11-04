@@ -1,3 +1,4 @@
+
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -119,6 +120,12 @@ export class ProductForm implements OnInit {
     }
   }
 
+  onTrackingModeChange(): void {
+    if (this.trackingMode === 'INDIVIDUAL') {
+      this.weight = null;
+    }
+  }
+
   addCategory(): void {
     this.categoryMessage = '';
 
@@ -166,11 +173,23 @@ export class ProductForm implements OnInit {
 
     const name = this.name.trim();
 
+    // 1. Product name
     if (!name) {
       this.errorMessage = 'Enter a product name.';
       return;
     }
 
+    // 2. Category
+    const validCategory = this.categories.some(
+      category => category.id === this.categoryId
+    );
+
+    if (!validCategory) {
+      this.errorMessage = 'Select a valid product category.';
+      return;
+    }
+
+    // 3. Type must belong to the selected category
     if (
       !this.selectedCategoryHasTypes ||
       !this.types.some(type => type.id === this.typeId)
@@ -180,19 +199,40 @@ export class ProductForm implements OnInit {
       return;
     }
 
+    // 4. Tracking mode
+    if (
+      this.trackingMode !== 'INDIVIDUAL' &&
+      this.trackingMode !== 'QUANTITY'
+    ) {
+      this.errorMessage = 'Select a valid tracking mode.';
+      return;
+    }
+
+    // 5. Quantity
     if (!Number.isInteger(this.quantity) || this.quantity < 1) {
       this.errorMessage = 'Quantity must be a whole number of at least 1.';
       return;
     }
 
-    if (
-      this.weight !== null &&
-      (!Number.isFinite(this.weight) || this.weight <= 0)
-    ) {
-      this.errorMessage = 'Weight must be greater than zero or left empty.';
+    // 6. Individual pieces cannot have weight
+    if (this.trackingMode === 'INDIVIDUAL' && this.weight !== null) {
+      this.errorMessage =
+        'Individual-piece products cannot have a weight. Clear the weight or choose quantity-based tracking.';
       return;
     }
 
+    // 7. Quantity-based products can have optional weight
+    if (
+      this.trackingMode === 'QUANTITY' &&
+      this.weight !== null &&
+      (!Number.isFinite(this.weight) || this.weight <= 0)
+    ) {
+      this.errorMessage =
+        'Weight must be greater than zero or left empty.';
+      return;
+    }
+
+    // 8. Prices
     if (
       this.purchasePrice === null ||
       this.salePrice === null ||
@@ -210,7 +250,7 @@ export class ProductForm implements OnInit {
       categoryId: this.categoryId,
       typeId: this.typeId,
       trackingMode: this.trackingMode,
-      weight: this.weight,
+      weight: this.trackingMode === 'INDIVIDUAL' ? null : this.weight,
       quantity: this.quantity,
       purchasePrice: this.purchasePrice,
       salePrice: this.salePrice,
@@ -219,9 +259,10 @@ export class ProductForm implements OnInit {
 
     this.isSaving = true;
 
-    const operation = this.isEditMode && this.productId !== null
-      ? this.productService.updateProduct(this.productId, request)
-      : this.productService.createProduct(request);
+    const operation =
+      this.isEditMode && this.productId !== null
+        ? this.productService.updateProduct(this.productId, request)
+        : this.productService.createProduct(request);
 
     operation.subscribe({
       next: product => {

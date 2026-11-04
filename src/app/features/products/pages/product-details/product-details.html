@@ -86,52 +86,52 @@
           <strong>{{ formatPrice(item.salePrice) }}</strong>
         </article>
       </div>
+
       <div class="value-summary">
+        <article class="value-card">
+          <span>Total purchase value</span>
+          <strong>{{ formatPrice(totalPurchaseValue) }}</strong>
+          <small>Current quantity × purchase price</small>
+        </article>
 
-  <article class="value-card">
-    <span>Total purchase value</span>
-    <strong>{{ formatPrice(totalPurchaseValue) }}</strong>
-    <small>Current quantity × purchase price</small>
-  </article>
+        <article class="value-card">
+          <span>Potential sales value</span>
+          <strong>{{ formatPrice(totalSalesValue) }}</strong>
+          <small>Current quantity × sale price</small>
+        </article>
 
-  <article class="value-card">
-    <span>Potential sales value</span>
-    <strong>{{ formatPrice(totalSalesValue) }}</strong>
-    <small>Current quantity × sale price</small>
-  </article>
-
-  <article class="value-card profit-card">
-    <span>Expected gross profit</span>
-    <strong>{{ formatPrice(expectedGrossProfit) }}</strong>
-    <small>Potential sales value − purchase value</small>
-  </article>
+        <article class="value-card profit-card">
+          <span>Expected gross profit</span>
+          <strong>{{ formatPrice(expectedGrossProfit) }}</strong>
+          <small>Potential sales value − purchase value</small>
+        </article>
       </div>
 
       <div class="actions">
-       @if (product.status === 'ACTIVE') {
-  <button
-    type="button"
-    class="archive-button"
-    [disabled]="isUpdatingStatus"
-    (click)="archiveProduct()"
-  >
-    {{ isUpdatingStatus ? 'Archiving...' : 'Archive product' }}
-  </button>
-       }
-       @else {
-       <button
-       type="button"
-     class="restore-button"
-    [disabled]="isUpdatingStatus"
-    (click)="restoreProduct()"
-  >
-    {{ isUpdatingStatus ? 'Restoring...' : 'Restore product' }}
-  </button>
-}
+        @if (product.status === 'ACTIVE') {
+          <button
+            type="button"
+            class="archive-button"
+            [disabled]="isUpdatingStatus"
+            (click)="archiveProduct()"
+          >
+            {{ isUpdatingStatus ? 'Archiving...' : 'Archive product' }}
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="restore-button"
+            [disabled]="isUpdatingStatus"
+            (click)="restoreProduct()"
+          >
+            {{ isUpdatingStatus ? 'Restoring...' : 'Restore product' }}
+          </button>
+        }
 
         <a
           class="secondary-button"
           routerLink="/stock-operation"
+          [queryParams]="{ productId: item.id }"
         >
           Stock operation
         </a>

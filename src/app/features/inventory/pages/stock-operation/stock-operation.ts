@@ -1,7 +1,7 @@
 
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 
 import { ProductService } from '../../../products/product.service';
 import type { ProductResponse } from '../../../products/product.model';
@@ -19,6 +19,7 @@ import type { StockOperationType } from '../../stock-operation.model';
 export class StockOperation implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly stockOperationService = inject(StockOperationService);
+  private readonly route = inject(ActivatedRoute);
 
   products: ProductResponse[] = [];
 
@@ -34,7 +35,10 @@ export class StockOperation implements OnInit {
   errorMessage = '';
 
   ngOnInit(): void {
-    this.loadProducts();
+    const requestedProductId =
+      this.route.snapshot.queryParamMap.get('productId');
+
+    this.loadProducts(requestedProductId);
   }
 
   get selectedProduct(): ProductResponse | undefined {
@@ -43,12 +47,28 @@ export class StockOperation implements OnInit {
     );
   }
 
-  loadProducts(): void {
+  loadProducts(requestedProductId: string | null = null): void {
     this.productService.getProducts().subscribe({
       next: products => {
         this.products = products.filter(
           product => product.status === 'ACTIVE',
         );
+
+        if (requestedProductId !== null) {
+          const productId = Number(requestedProductId);
+
+          const productExists = this.products.some(
+            product => product.id === productId,
+          );
+
+          if (
+            Number.isSafeInteger(productId) &&
+            productId > 0 &&
+            productExists
+          ) {
+            this.selectedProductId = productId;
+          }
+        }
       },
       error: () => {
         this.errorMessage = 'Unable to load products.';
@@ -57,11 +77,15 @@ export class StockOperation implements OnInit {
   }
 
   submitOperation(): void {
+    if (this.isLoading) {
+      return;
+    }
+
     this.successMessage = '';
     this.errorMessage = '';
 
-    if (this.selectedProductId === null) {
-      this.errorMessage = 'Please select a product.';
+    if (!this.selectedProduct) {
+      this.errorMessage = 'Please select a valid product.';
       return;
     }
 
@@ -73,7 +97,7 @@ export class StockOperation implements OnInit {
     this.isLoading = true;
 
     this.stockOperationService.createOperation(
-      this.selectedProductId,
+      this.selectedProduct.id,
       this.operationType,
       this.quantity,
       this.notes.trim() || null,

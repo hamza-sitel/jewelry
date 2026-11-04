@@ -92,7 +92,7 @@ export class Dashboard implements OnInit {
   // Counts product records with 1–3 pieces, not individual pieces.
   get lowStockCount(): number {
     return this.activeProducts.filter(
-      product => product.quantity > 0 && product.quantity <= 10,
+      product => product.quantity > 0 && product.quantity <= 3,
     ).length;
   }
 
