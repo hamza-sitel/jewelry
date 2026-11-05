@@ -293,7 +293,9 @@ export class Reports implements OnInit {
       Barcode: product.barcode,
       Category: product.categoryName,
       Type: product.typeName,
-      Tracking: product.trackingMode,
+      Tracking: product.trackingMode === 'WEIGHTED'
+  ? 'Weighted jewelry'
+  : 'Piece-based stock',
       Quantity: product.quantity,
       'Weight per piece (g)': product.weight,
       'Total weight (g)':

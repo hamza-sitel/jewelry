@@ -1,17 +1,12 @@
-
 <section class="product-form-page">
   <header class="page-header">
     <div>
       <p class="eyebrow">INVENTORY MANAGEMENT</p>
       <h1>{{ isEditMode ? 'Edit product' : 'Add a product' }}</h1>
-      <p class="subtitle">
-        Manage product details, classification and stock.
-      </p>
+      <p class="subtitle">Manage product details, classification, weighing and pricing.</p>
     </div>
 
-    <a class="secondary-button" routerLink="/products">
-      Back to stock
-    </a>
+    <a class="secondary-button" routerLink="/products">Back to stock</a>
   </header>
 
   @if (isLoading) {
@@ -28,6 +23,7 @@
             name="name"
             [(ngModel)]="name"
             placeholder="Example: Gold ring"
+            maxlength="120"
             required
           />
         </label>
@@ -41,36 +37,34 @@
             (ngModelChange)="onCategoryChange()"
             required
           >
+            <option [ngValue]="0">Select a category</option>
             @for (category of categories; track category.id) {
-              <option [ngValue]="category.id">
-                {{ category.name }}
-              </option>
+              <option [ngValue]="category.id">{{ category.name }}</option>
             }
           </select>
         </div>
 
-        <div class="inline-editor">
-          <label class="field">
-            <span>New category</span>
-            <input
-              type="text"
-              name="newCategoryName"
-              [(ngModel)]="newCategoryName"
-              placeholder="Example: Titanium"
-            />
-          </label>
+        @if (!isEditMode) {
+          <div class="inline-editor">
+            <label class="field">
+              <span>New category</span>
+              <input
+                type="text"
+                name="newCategoryName"
+                [(ngModel)]="newCategoryName"
+                placeholder="Example: Titanium"
+                maxlength="80"
+              />
+            </label>
 
-          <button
-            type="button"
-            class="secondary-button"
-            (click)="addCategory()"
-          >
-            Add category
-          </button>
-        </div>
+            <button type="button" class="secondary-button" (click)="addCategory()">
+              Add category
+            </button>
+          </div>
 
-        @if (categoryMessage) {
-          <p class="form-message">{{ categoryMessage }}</p>
+          @if (categoryMessage) {
+            <p class="form-message" role="status">{{ categoryMessage }}</p>
+          }
         }
 
         <div class="field">
@@ -97,6 +91,8 @@
               name="newTypeName"
               [(ngModel)]="newTypeName"
               placeholder="Example: Pendant"
+              maxlength="80"
+              [disabled]="categoryId <= 0"
             />
           </label>
 
@@ -104,13 +100,14 @@
             type="button"
             class="secondary-button"
             (click)="addType()"
+            [disabled]="categoryId <= 0"
           >
             Add type
           </button>
         </div>
 
         @if (typeMessage) {
-          <p class="form-message">{{ typeMessage }}</p>
+          <p class="form-message" role="status">{{ typeMessage }}</p>
         }
       </section>
 
@@ -123,10 +120,15 @@
             name="trackingMode"
             [(ngModel)]="trackingMode"
             (ngModelChange)="onTrackingModeChange()"
+            [disabled]="isEditMode"
+            required
           >
-            <option value="INDIVIDUAL">Individual piece</option>
-            <option value="QUANTITY">Quantity-based stock</option>
+            <option value="PIECE">Piece-based — no weight</option>
+            <option value="WEIGHTED">Weighted — weight recorded per piece</option>
           </select>
+          @if (isEditMode) {
+            <small>Tracking mode is fixed after creation to protect stock history.</small>
+          }
         </label>
 
         <label class="field">
@@ -137,37 +139,36 @@
             [(ngModel)]="quantity"
             min="1"
             step="1"
+            [disabled]="isEditMode"
             required
           />
-          <small>
-            Both tracking modes can have multiple pieces.
-          </small>
+          <small>{{ quantityHint }}</small>
         </label>
 
         <label class="field">
-          <span>Weight per piece (g) — optional</span>
+          <span>Weight per piece (g)</span>
           <input
             type="number"
             name="weight"
             [(ngModel)]="weight"
             min="0.001"
             step="0.001"
-            placeholder="Leave empty if not weighed"
-            [disabled]="trackingMode === 'INDIVIDUAL'"
+            placeholder="Example: 2.590"
+            [disabled]="trackingMode === 'PIECE'"
+            [required]="trackingMode === 'WEIGHTED'"
           />
-
           <small>
-            @if (trackingMode === 'INDIVIDUAL') {
-              Individual-piece products cannot have a recorded weight.
+            @if (trackingMode === 'PIECE') {
+              Piece-based products never store grams. Their weight is always empty.
             } @else {
-              Total recorded weight is the weight per piece multiplied by quantity.
+              Enter the weight of one piece. The same per-piece weight is used when quantity is greater than one.
             }
           </small>
         </label>
       </section>
 
       <section class="form-section">
-        <h2>Pricing</h2>
+        <h2>Pricing and image</h2>
 
         <label class="field">
           <span>Purchase price (DH)</span>
@@ -192,27 +193,31 @@
             required
           />
         </label>
+
+        <label class="field">
+          <span>Product image URL (optional)</span>
+          <input
+            type="url"
+            name="imageUrl"
+            [(ngModel)]="imageUrl"
+            placeholder="https://example.com/product-image.jpg"
+          />
+          <small>Image upload and cloud storage will be added during backend integration.</small>
+        </label>
       </section>
 
       @if (errorMessage) {
-        <p class="error-message">{{ errorMessage }}</p>
+        <p class="error-message" role="alert">{{ errorMessage }}</p>
       }
 
       <footer class="form-actions">
         <a class="secondary-button" routerLink="/products">Cancel</a>
-
         <button
           type="submit"
           class="primary-button"
-          [disabled]="isSaving || isLoading"
+          [disabled]="isSaving || isLoading || categories.length === 0"
         >
-          {{
-            isSaving
-              ? 'Saving...'
-              : isEditMode
-                ? 'Save changes'
-                : 'Create product'
-          }}
+          {{ isSaving ? 'Saving...' : isEditMode ? 'Save changes' : 'Create product' }}
         </button>
       </footer>
     </form>

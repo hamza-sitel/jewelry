@@ -3,16 +3,11 @@
     <div>
       <p class="eyebrow">JEWELRY INVENTORY</p>
       <h1>Stock management</h1>
-      <p class="subtitle">
-        Search, filter and manage your jewelry collection.
-      </p>
+      <p class="subtitle">Search, filter and manage your jewelry collection.</p>
     </div>
 
     <div class="header-actions">
-      <a class="secondary-button" routerLink="/categories">
-        Manage categories
-      </a>
-
+      <a class="secondary-button" routerLink="/categories">Manage categories</a>
       <a class="primary-button" routerLink="/products/new">
         <span aria-hidden="true">+</span>
         Add product
@@ -26,12 +21,7 @@
         <h2>Find products</h2>
         <p>Use the search and filters to narrow your stock.</p>
       </div>
-
-      <button
-        type="button"
-        class="text-button"
-        (click)="clearFilters()"
-      >
+      <button type="button" class="text-button" (click)="clearFilters()">
         Clear filters
       </button>
     </div>
@@ -39,70 +29,51 @@
     <div class="filter-grid">
       <label class="field search-field">
         <span>Search</span>
-
         <input
           type="search"
           name="searchTerm"
           [(ngModel)]="searchTerm"
-          placeholder="Name, barcode, category or type..."
+          (ngModelChange)="onFiltersChanged()"
+          placeholder="Product, barcode, category or type..."
         />
       </label>
 
       <label class="field">
         <span>Category</span>
-
         <select
           name="selectedCategoryId"
           [(ngModel)]="selectedCategoryId"
           (ngModelChange)="onCategoryFilterChange()"
         >
           <option [ngValue]="'ALL'">All categories</option>
-
           @for (category of categories; track category.id) {
-            <option [ngValue]="category.id">
-              {{ category.name }}
-            </option>
+            <option [ngValue]="category.id">{{ category.name }}</option>
           }
         </select>
       </label>
 
       <label class="field">
         <span>Type</span>
-
-        <select
-          name="selectedTypeId"
-          [(ngModel)]="selectedTypeId"
-        >
+        <select name="selectedTypeId" [(ngModel)]="selectedTypeId" (ngModelChange)="onFiltersChanged()">
           <option [ngValue]="'ALL'">All types</option>
-
           @for (type of availableTypes; track type.id) {
-            <option [ngValue]="type.id">
-              {{ type.name }}
-            </option>
+            <option [ngValue]="type.id">{{ type.name }}</option>
           }
         </select>
       </label>
 
       <label class="field">
         <span>Tracking mode</span>
-
-        <select
-          name="selectedTrackingMode"
-          [(ngModel)]="selectedTrackingMode"
-        >
+        <select name="selectedTrackingMode" [(ngModel)]="selectedTrackingMode" (ngModelChange)="onFiltersChanged()">
           <option value="ALL">All modes</option>
-          <option value="INDIVIDUAL">Individual piece</option>
-          <option value="QUANTITY">Quantity-based</option>
+          <option value="PIECE">Piece-based</option>
+          <option value="WEIGHTED">Weighted jewelry</option>
         </select>
       </label>
 
       <label class="field">
         <span>Stock level</span>
-
-        <select
-          name="selectedStockFilter"
-          [(ngModel)]="selectedStockFilter"
-        >
+        <select name="selectedStockFilter" [(ngModel)]="selectedStockFilter" (ngModelChange)="onFiltersChanged()">
           <option value="ALL">All stock levels</option>
           <option value="IN_STOCK">In stock</option>
           <option value="LOW_STOCK">Low stock (1–3)</option>
@@ -112,11 +83,7 @@
 
       <label class="field">
         <span>Product status</span>
-
-        <select
-          name="selectedStatus"
-          [(ngModel)]="selectedStatus"
-        >
+        <select name="selectedStatus" [(ngModel)]="selectedStatus" (ngModelChange)="onFiltersChanged()">
           <option value="ALL">All products</option>
           <option value="ACTIVE">Active</option>
           <option value="ARCHIVED">Archived</option>
@@ -131,32 +98,19 @@
   </section>
 
   @if (isLoading) {
-    <div class="state-panel">
-      Loading your stock...
-    </div>
+    <div class="state-panel">Loading your stock...</div>
   } @else if (errorMessage) {
     <div class="state-panel error-state">
       {{ errorMessage }}
-
-      <button
-        type="button"
-        class="secondary-button"
-        (click)="loadProducts()"
-      >
+      <button type="button" class="secondary-button" (click)="loadProducts()">
         Try again
       </button>
     </div>
   } @else if (filteredProducts.length === 0) {
     <div class="state-panel empty-state">
       <h2>No products found</h2>
-
-      <p>
-        Try changing your search or filters, or add a new product.
-      </p>
-
-      <a class="primary-button" routerLink="/products/new">
-        Add product
-      </a>
+      <p>Try changing your search or filters, or add a new product.</p>
+      <a class="primary-button" routerLink="/products/new">Add product</a>
     </div>
   } @else {
     <section class="table-panel">
@@ -176,99 +130,64 @@
               <th>Actions</th>
             </tr>
           </thead>
-
           <tbody>
-            @for (product of filteredProducts; track product.id) {
+            @for (product of paginatedProducts; track product.id) {
               <tr>
                 <td>
                   <div class="product-cell">
-                    <div class="product-avatar">
-                      {{ product.name.charAt(0).toUpperCase() }}
-                    </div>
-
+                    @if (product.imageUrl) {
+                      <img
+                        class="product-avatar"
+                        [src]="product.imageUrl"
+                        [alt]="product.name"
+                        loading="lazy"
+                      />
+                    } @else {
+                      <div class="product-avatar">
+                        {{ product.name.charAt(0).toUpperCase() }}
+                      </div>
+                    }
                     <div>
                       <strong>{{ product.name }}</strong>
                       <small>Product #{{ product.id }}</small>
                     </div>
                   </div>
                 </td>
-
-                <td class="barcode">
-                  {{ product.barcode }}
-                </td>
-
+                <td class="barcode">{{ product.barcode }}</td>
                 <td>
                   <div class="category-cell">
                     <strong>{{ product.categoryName }}</strong>
                     <small>{{ product.typeName }}</small>
                   </div>
                 </td>
-
                 <td>
                   <span class="tracking-badge">
-                    {{
-                      product.trackingMode === 'INDIVIDUAL'
-                        ? 'Individual'
-                        : 'Quantity'
-                    }}
+                    {{ product.trackingMode | productTrackingModeLabel }}
                   </span>
                 </td>
-
-                <td class="quantity-cell">
-                  {{ product.quantity }}
-                </td>
-
-                <td>
-                  {{ formatWeight(product.weight) }}
-                </td>
-
-                <td class="price-cell">
-                  {{ formatPrice(product.salePrice) }}
-                </td>
-
+                <td class="quantity-cell">{{ product.quantity }}</td>
+                <td>{{ formatWeight(product.weight) }}</td>
+                <td class="price-cell">{{ formatPrice(product.salePrice) }}</td>
                 <td>
                   @if (product.quantity === 0) {
-                    <span class="stock-badge out-of-stock">
-                      Out of stock
-                    </span>
+                    <span class="stock-badge out-of-stock">Out of stock</span>
                   } @else if (product.quantity <= 3) {
-                    <span class="stock-badge low-stock">
-                      Low stock
-                    </span>
+                    <span class="stock-badge low-stock">Low stock</span>
                   } @else {
-                    <span class="stock-badge in-stock">
-                      In stock
-                    </span>
+                    <span class="stock-badge in-stock">In stock</span>
                   }
                 </td>
-
                 <td>
                   @if (product.status === 'ACTIVE') {
-                    <span class="product-status-badge active">
-                      Active
-                    </span>
+                    <span class="product-status-badge active">Active</span>
                   } @else {
-                    <span class="product-status-badge archived">
-                      Archived
-                    </span>
+                    <span class="product-status-badge archived">Archived</span>
                   }
                 </td>
-
                 <td>
                   <div class="action-buttons">
-                    <a
-                      class="details-button"
-                      [routerLink]="['/products', product.id]"
-                    >
-                      Details
-                    </a>
-
-                    <a
-                      class="edit-button"
-                      [routerLink]="['/products', product.id, 'edit']"
-                    >
-                      Edit
-                    </a>
+                    <a class="details-button" [routerLink]="['/products', product.id]">Details</a>
+                    <a class="edit-button" [routerLink]="['/products', product.id, 'edit']">Edit</a>
                   </div>
                 </td>
               </tr>
@@ -276,6 +195,12 @@
           </tbody>
         </table>
       </div>
+      <app-pagination
+        [totalItems]="filteredProducts.length"
+        [pageSize]="pageSize"
+        [currentPage]="currentPage"
+        (pageChange)="currentPage = $event"
+      />
     </section>
   }
 </section>

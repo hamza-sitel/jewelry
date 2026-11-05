@@ -1,27 +1,17 @@
-
 <main class="details-page">
   <header class="page-header">
     <div>
       <p class="eyebrow">INVENTORY / PRODUCTS</p>
       <h1>Product details</h1>
-      <p class="page-description">
-        Complete information and stock activity for this product.
-      </p>
+      <p class="page-description">Complete information and stock activity for this product.</p>
     </div>
-
-    <a routerLink="/products" class="secondary-button">
-      Back to products
-    </a>
+    <a routerLink="/products" class="secondary-button">Back to products</a>
   </header>
 
   @if (isLoading) {
-    <section class="state-panel">
-      Loading product details...
-    </section>
+    <section class="state-panel">Loading product details...</section>
   } @else if (errorMessage) {
-    <section class="state-panel state-error">
-      {{ errorMessage }}
-    </section>
+    <section class="state-panel state-error">{{ errorMessage }}</section>
   } @else if (product; as item) {
     <section class="product-panel">
       <div class="product-heading">
@@ -30,11 +20,7 @@
           <h2>{{ item.name }}</h2>
           <p class="barcode">{{ item.barcode }}</p>
         </div>
-
-        <span
-          class="status-badge"
-          [class.status-inactive]="item.status !== 'ACTIVE'"
-        >
+        <span class="status-badge" [class.status-inactive]="item.status !== 'ACTIVE'">
           {{ item.status }}
         </span>
       </div>
@@ -44,27 +30,22 @@
           <span>Category</span>
           <strong>{{ item.categoryName }}</strong>
         </article>
-
         <article class="detail-card">
           <span>Type</span>
           <strong>{{ item.typeName }}</strong>
         </article>
-
         <article class="detail-card">
           <span>Tracking mode</span>
-          <strong>{{ item.trackingMode }}</strong>
+          <strong>{{ item.trackingMode | productTrackingModeLabel }}</strong>
         </article>
-
         <article class="detail-card">
           <span>Available quantity</span>
           <strong>{{ item.quantity }} piece(s)</strong>
         </article>
-
         <article class="detail-card">
           <span>Weight per piece</span>
           <strong>{{ formatWeight(item.weight) }}</strong>
         </article>
-
         <article class="detail-card">
           <span>Total recorded weight</span>
           <strong>
@@ -75,12 +56,10 @@
             }
           </strong>
         </article>
-
         <article class="detail-card">
           <span>Purchase price</span>
           <strong>{{ formatPrice(item.purchasePrice) }}</strong>
         </article>
-
         <article class="detail-card highlight">
           <span>Sale price</span>
           <strong>{{ formatPrice(item.salePrice) }}</strong>
@@ -93,13 +72,11 @@
           <strong>{{ formatPrice(totalPurchaseValue) }}</strong>
           <small>Current quantity × purchase price</small>
         </article>
-
         <article class="value-card">
           <span>Potential sales value</span>
           <strong>{{ formatPrice(totalSalesValue) }}</strong>
           <small>Current quantity × sale price</small>
         </article>
-
         <article class="value-card profit-card">
           <span>Expected gross profit</span>
           <strong>{{ formatPrice(expectedGrossProfit) }}</strong>
@@ -108,7 +85,7 @@
       </div>
 
       <div class="actions">
-        @if (product.status === 'ACTIVE') {
+        @if (item.status === 'ACTIVE') {
           <button
             type="button"
             class="archive-button"
@@ -127,21 +104,10 @@
             {{ isUpdatingStatus ? 'Restoring...' : 'Restore product' }}
           </button>
         }
-
-        <a
-          class="secondary-button"
-          routerLink="/stock-operation"
-          [queryParams]="{ productId: item.id }"
-        >
+        <a class="secondary-button" routerLink="/stock-operation" [queryParams]="{ productId: item.id }">
           Stock operation
         </a>
-
-        <a
-          class="secondary-button"
-          routerLink="/barcode"
-        >
-          Barcode scanner
-        </a>
+        <a class="secondary-button" routerLink="/barcode">Barcode scanner</a>
       </div>
     </section>
 
@@ -151,14 +117,11 @@
           <p class="eyebrow">ACTIVITY</p>
           <h2>Stock history</h2>
         </div>
-
         <span>{{ operations.length }} operations</span>
       </div>
 
       @if (operations.length === 0) {
-        <div class="empty-state">
-          No stock operations have been recorded for this product yet.
-        </div>
+        <div class="empty-state">No stock operations have been recorded for this product yet.</div>
       } @else {
         <div class="table-wrapper">
           <table>
@@ -172,9 +135,8 @@
                 <th>Notes</th>
               </tr>
             </thead>
-
             <tbody>
-              @for (operation of operations; track operation.id) {
+              @for (operation of paginatedOperations; track operation.id) {
                 <tr>
                   <td>{{ getOperationLabel(operation.type) }}</td>
                   <td>{{ operation.quantity }}</td>
@@ -187,6 +149,12 @@
             </tbody>
           </table>
         </div>
+        <app-pagination
+          [totalItems]="operations.length"
+          [pageSize]="pageSize"
+          [currentPage]="currentOperationPage"
+          (pageChange)="currentOperationPage = $event"
+        />
       }
     </section>
   }

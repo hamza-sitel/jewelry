@@ -1,4 +1,3 @@
-
 <div class="history-page">
   <header class="page-header">
     <div>
@@ -6,10 +5,7 @@
       <h1>Stock history</h1>
       <p>Review every purchase, sale and stock adjustment.</p>
     </div>
-
-    <a routerLink="/stock-operation" class="new-operation-link">
-      + New operation
-    </a>
+    <a routerLink="/stock-operation" class="new-operation-link">+ New operation</a>
   </header>
 
   <section class="history-card">
@@ -18,10 +14,10 @@
         <h2>All operations</h2>
         <p>{{ filteredOperations.length }} recorded operations</p>
       </div>
-
       <select
         aria-label="Filter operations"
         [(ngModel)]="selectedFilter"
+        (ngModelChange)="onFilterChange()"
       >
         <option value="ALL">All operations</option>
         <option value="PURCHASE">Purchases</option>
@@ -32,13 +28,9 @@
     </div>
 
     @if (isLoading) {
-      <div class="empty-state">
-        Loading stock history...
-      </div>
+      <div class="empty-state">Loading stock history...</div>
     } @else if (errorMessage) {
-      <div class="empty-state error">
-        {{ errorMessage }}
-      </div>
+      <div class="empty-state error">{{ errorMessage }}</div>
     } @else if (filteredOperations.length === 0) {
       <div class="empty-state">
         <h3>No operations found</h3>
@@ -59,9 +51,8 @@
               <th>Notes</th>
             </tr>
           </thead>
-
           <tbody>
-            @for (operation of filteredOperations; track operation.id) {
+            @for (operation of paginatedOperations; track operation.id) {
               <tr>
                 <td>{{ formatDate(operation.createdAt) }}</td>
                 <td class="product-name">{{ operation.productName }}</td>
@@ -71,17 +62,13 @@
                     class="operation-badge"
                     [class.positive]="getOperationClass(operation.type) === 'positive'"
                     [class.negative]="getOperationClass(operation.type) === 'negative'"
-                  >
-                    {{ getOperationLabel(operation.type) }}
-                  </span>
+                  >{{ getOperationLabel(operation.type) }}</span>
                 </td>
                 <td
                   class="quantity-change"
                   [class.positive]="getOperationClass(operation.type) === 'positive'"
                   [class.negative]="getOperationClass(operation.type) === 'negative'"
-                >
-                  {{ getQuantityChange(operation) }}
-                </td>
+                >{{ getQuantityChange(operation) }}</td>
                 <td>{{ operation.previousStock }}</td>
                 <td>{{ operation.newStock }}</td>
                 <td>{{ operation.notes || '—' }}</td>
@@ -90,6 +77,12 @@
           </tbody>
         </table>
       </div>
+      <app-pagination
+        [totalItems]="filteredOperations.length"
+        [pageSize]="pageSize"
+        [currentPage]="currentPage"
+        (pageChange)="currentPage = $event"
+      />
     }
   </section>
 </div>

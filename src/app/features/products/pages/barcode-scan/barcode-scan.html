@@ -7,19 +7,12 @@
         Scan a jewelry barcode to view its product and stock details.
       </p>
     </div>
-
-    <a class="secondary-button" routerLink="/products">
-      View inventory
-    </a>
+    <a class="secondary-button" routerLink="/products">View inventory</a>
   </header>
 
   <section class="scanner-panel">
     <div class="scanner-icon" aria-hidden="true">
-      <svg
-        viewBox="0 0 48 48"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
           d="M7 17V9H15M33 9H41V17M41 31V39H33M15 39H7V31"
           stroke="currentColor"
@@ -37,7 +30,6 @@
     </div>
 
     <h2>Scan a product</h2>
-
     <p class="scanner-description">
       Connect your USB scanner, click the input if necessary, and scan a barcode.
       You can also type a barcode manually.
@@ -45,7 +37,6 @@
 
     <form class="scan-form" (ngSubmit)="searchBarcode()">
       <label for="barcode-input">Product barcode</label>
-
       <div class="input-row">
         <input
           #barcodeInput
@@ -58,8 +49,8 @@
           autocapitalize="characters"
           spellcheck="false"
           [disabled]="isSearching"
+          required
         />
-
         <button
           type="submit"
           class="primary-button"
@@ -68,16 +59,11 @@
           {{ isSearching ? 'Searching...' : 'Find product' }}
         </button>
       </div>
-
-      <p class="input-hint">
-        Press Enter after scanning to search automatically.
-      </p>
+      <p class="input-hint">Press Enter after scanning to search automatically.</p>
     </form>
 
     @if (errorMessage) {
-      <div class="message message-error" role="alert">
-        {{ errorMessage }}
-      </div>
+      <div class="message message-error" role="alert">{{ errorMessage }}</div>
     }
   </section>
 
@@ -89,13 +75,10 @@
           <h2>{{ product.name }}</h2>
           <p class="barcode-value">{{ product.barcode }}</p>
         </div>
-
         <span
           class="stock-badge"
           [class.stock-empty]="product.quantity === 0"
-          [class.stock-low]="
-            product.quantity > 0 && product.quantity <= 3
-          "
+          [class.stock-low]="product.quantity > 0 && product.quantity <= 3"
         >
           @if (product.quantity === 0) {
             Out of stock
@@ -112,33 +95,22 @@
           <span>Category</span>
           <strong>{{ product.categoryName }}</strong>
         </div>
-
         <div class="detail-card">
           <span>Type</span>
           <strong>{{ product.typeName }}</strong>
         </div>
-
         <div class="detail-card">
           <span>Tracking mode</span>
-          <strong>
-            {{
-              product.trackingMode === 'INDIVIDUAL'
-                ? 'Individual'
-                : 'Quantity'
-            }}
-          </strong>
+          <strong>{{ product.trackingMode | productTrackingModeLabel }}</strong>
         </div>
-
         <div class="detail-card">
           <span>Available quantity</span>
           <strong>{{ product.quantity }} piece(s)</strong>
         </div>
-
         <div class="detail-card">
           <span>Weight per piece</span>
           <strong>{{ formatWeight(product.weight) }}</strong>
         </div>
-
         <div class="detail-card">
           <span>Total recorded weight</span>
           <strong>
@@ -149,12 +121,10 @@
             }
           </strong>
         </div>
-
         <div class="detail-card">
           <span>Purchase price per piece</span>
           <strong>{{ formatPrice(product.purchasePrice) }}</strong>
         </div>
-
         <div class="detail-card detail-highlight">
           <span>Sale price per piece</span>
           <strong>{{ formatPrice(product.salePrice) }}</strong>
@@ -180,7 +150,6 @@
           <div class="operation-form-grid">
             <div class="operation-field">
               <label for="scan-operation-type">Operation type</label>
-
               <select
                 id="scan-operation-type"
                 name="scanOperationType"
@@ -196,7 +165,6 @@
 
             <div class="operation-field">
               <label for="scan-operation-quantity">Quantity</label>
-
               <input
                 id="scan-operation-quantity"
                 name="scanOperationQuantity"
@@ -207,14 +175,12 @@
                 [disabled]="isSaving || isScannedProductArchived"
                 required
               />
+              <small>Enter the number of pieces. For weighted products, the recorded weight is per piece.</small>
             </div>
           </div>
 
           <div class="operation-field">
-            <label for="scan-operation-notes">
-              Notes <span>(optional)</span>
-            </label>
-
+            <label for="scan-operation-notes">Notes <span>(optional)</span></label>
             <textarea
               id="scan-operation-notes"
               name="scanOperationNotes"
@@ -230,7 +196,6 @@
               {{ operationSuccessMessage }}
             </div>
           }
-
           @if (operationErrorMessage) {
             <div class="message message-error" role="alert">
               {{ operationErrorMessage }}
@@ -248,18 +213,10 @@
       </section>
 
       <div class="result-actions">
-        <a
-          class="primary-button"
-          [routerLink]="['/products', product.id, 'edit']"
-        >
+        <a class="primary-button" [routerLink]="['/products', product.id, 'edit']">
           Edit product
         </a>
-
-        <button
-          type="button"
-          class="secondary-button"
-          (click)="clearResult()"
-        >
+        <button type="button" class="secondary-button" (click)="clearResult()">
           Scan another product
         </button>
       </div>

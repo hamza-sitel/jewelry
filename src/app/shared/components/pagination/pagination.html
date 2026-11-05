@@ -1,0 +1,49 @@
+@if (totalItems > 0) {
+  <div class="pagination-bar">
+    <p class="pagination-summary">
+      Showing <strong>{{ firstItem }}</strong>–<strong>{{ lastItem }}</strong>
+      of <strong>{{ totalItems }}</strong>
+    </p>
+
+    @if (totalPages > 1) {
+      <nav class="pagination-controls" aria-label="Table pagination">
+        <button
+          type="button"
+          class="pagination-direction"
+          aria-label="Previous page"
+          [disabled]="currentPage <= 1"
+          (click)="goToPage(currentPage - 1)"
+        >
+          Previous
+        </button>
+
+        @for (page of visiblePages; track $index) {
+          @if (page === null) {
+            <span class="pagination-ellipsis" aria-hidden="true">…</span>
+          } @else {
+            <button
+              type="button"
+              class="pagination-number"
+              [class.active]="page === currentPage"
+              [attr.aria-current]="page === currentPage ? 'page' : null"
+              [attr.aria-label]="'Page ' + page"
+              (click)="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          }
+        }
+
+        <button
+          type="button"
+          class="pagination-direction"
+          aria-label="Next page"
+          [disabled]="currentPage >= totalPages"
+          (click)="goToPage(currentPage + 1)"
+        >
+          Next
+        </button>
+      </nav>
+    }
+  </div>
+}

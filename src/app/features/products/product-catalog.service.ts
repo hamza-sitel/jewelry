@@ -1,194 +1,196 @@
-
 import { Injectable, inject } from '@angular/core';
+import { Observable, of, throwError, tap } from 'rxjs';
 
 import type {
+  CreateCategoryRequest,
+  CreateProductTypeRequest,
+  ProductCatalogSnapshot,
   ProductCategory,
   ProductType,
+  UpdateCategoryRequest,
+  UpdateProductTypeRequest,
 } from './product.model';
+import { MOCK_PRODUCT_CATALOG } from './product-catalog.mock';
+import { PRODUCT_CATALOG_DATA_SOURCE } from './product-catalog-data-source';
 
-import { BrowserStorageService } from '../../core/services/browser-storage.service';
-
-@Injectable({
-  providedIn: 'root',
-})
+/** Application-facing service for category and product-type operations. */
+@Injectable({ providedIn: 'root' })
 export class ProductCatalogService {
-  private readonly storage = inject(BrowserStorageService);
+  private readonly dataSource = inject(PRODUCT_CATALOG_DATA_SOURCE);
+  private snapshot: ProductCatalogSnapshot = this.copyCatalog(MOCK_PRODUCT_CATALOG);
 
-  private readonly categoriesStorageKey = 'jewelry-stock.categories';
-  private readonly typesStorageKey = 'jewelry-stock.types';
-
-  private categories: ProductCategory[] = this.storage.get(
-    this.categoriesStorageKey,
-    [
-      { id: 1, name: '18K Gold' },
-      { id: 2, name: '925 Silver' },
-      { id: 3, name: 'Steel' },
-      { id: 4, name: '800 Silver' },
-      { id: 5, name: 'Jewelry & Stones' },
-    ],
-  );
-
-  private types: ProductType[] = this.storage.get(
-    this.typesStorageKey,
-    [
-      { id: 1, categoryId: 1, name: 'Ring' },
-      { id: 2, categoryId: 1, name: 'Bracelet' },
-      { id: 3, categoryId: 1, name: 'Chain' },
-      { id: 4, categoryId: 1, name: 'Earrings' },
-      { id: 5, categoryId: 1, name: 'Pendant' },
-      { id: 6, categoryId: 2, name: 'Ring' },
-      { id: 7, categoryId: 2, name: 'Bracelet' },
-      { id: 8, categoryId: 2, name: 'Necklace' },
-      { id: 9, categoryId: 2, name: 'Earrings' },
-      { id: 10, categoryId: 2, name: 'Chain' },
-      { id: 11, categoryId: 3, name: 'Bracelet' },
-      { id: 12, categoryId: 3, name: 'Necklace' },
-      { id: 13, categoryId: 3, name: 'Ring' },
-      { id: 14, categoryId: 3, name: 'Earrings' },
-      { id: 15, categoryId: 4, name: 'Ring' },
-      { id: 16, categoryId: 4, name: 'Bracelet' },
-      { id: 17, categoryId: 4, name: 'Earrings' },
-      { id: 18, categoryId: 5, name: 'Emerald' },
-      { id: 19, categoryId: 5, name: 'Ruby' },
-      { id: 20, categoryId: 5, name: 'Sapphire' },
-      { id: 21, categoryId: 5, name: 'Other Stone' },
-    ],
-  );
+  loadCatalog(): Observable<ProductCatalogSnapshot> {
+    return this.dataSource.getCatalog().pipe(
+      tap(catalog => {
+        this.snapshot = this.copyCatalog(catalog);
+      }),
+    );
+  }
 
   getCategories(): ProductCategory[] {
-    return this.categories.map(category => ({ ...category }));
+    return this.snapshot.categories.map(category => ({ ...category }));
   }
 
   getTypes(): ProductType[] {
-    return this.types.map(type => ({ ...type }));
+    return this.snapshot.types.map(type => ({ ...type }));
   }
 
   getTypesForCategory(categoryId: number): ProductType[] {
-    return this.types
+    return this.snapshot.types
       .filter(type => type.categoryId === categoryId)
       .map(type => ({ ...type }));
   }
 
   categoryHasTypes(categoryId: number): boolean {
-    return this.types.some(type => type.categoryId === categoryId);
+    return this.snapshot.types.some(type => type.categoryId === categoryId);
   }
 
   getCategoryName(categoryId: number): string {
     return (
-      this.categories.find(category => category.id === categoryId)?.name ??
+      this.snapshot.categories.find(category => category.id === categoryId)?.name ??
       'Unknown category'
     );
   }
 
   getTypeName(typeId: number): string {
-    return this.types.find(type => type.id === typeId)?.name ?? 'Unknown type';
+    return this.snapshot.types.find(type => type.id === typeId)?.name ?? 'Unknown type';
   }
 
-  addCategory(name: string): ProductCategory | null {
+  addCategory(name: string): Observable<ProductCategory> {
     const normalizedName = name.trim();
 
     if (
       !normalizedName ||
-      this.categories.some(
+      this.snapshot.categories.some(category =>
+        this.sameName(category.name, normalizedName),
+      )
+    ) {
+      return throwError(() => new Error('Enter a unique category name.'));
+    }
+
+    const request: CreateCategoryRequest = { name: normalizedName };
+
+    return this.dataSource.createCategory(request).pipe(
+      tap(category => {
+        this.snapshot = {
+          ...this.snapshot,
+          categories: [...this.snapshot.categories, category],
+        };
+      }),
+    );
+  }
+
+  updateCategory(id: number, name: string): Observable<ProductCategory | undefined> {
+    const normalizedName = name.trim();
+    const current = this.snapshot.categories.find(category => category.id === id);
+
+    if (!current) {
+      return of(undefined);
+    }
+
+    if (
+      !normalizedName ||
+      this.snapshot.categories.some(
         category =>
-          category.name.toLowerCase() === normalizedName.toLowerCase(),
+          category.id !== id && this.sameName(category.name, normalizedName),
       )
     ) {
-      return null;
+      return throwError(() => new Error('Enter a unique category name.'));
     }
 
-    const category: ProductCategory = {
-      id: this.nextId(this.categories),
-      name: normalizedName,
-    };
+    const request: UpdateCategoryRequest = { name: normalizedName };
 
-    this.categories.push(category);
-    this.saveCategories();
-
-    return { ...category };
+    return this.dataSource.updateCategory(id, request).pipe(
+      tap(updated => {
+        if (updated) {
+          this.snapshot = {
+            ...this.snapshot,
+            categories: this.snapshot.categories.map(category =>
+              category.id === id ? updated : category,
+            ),
+          };
+        }
+      }),
+    );
   }
 
-  updateCategory(id: number, name: string): boolean {
+  addType(categoryId: number, name: string): Observable<ProductType> {
     const normalizedName = name.trim();
-    const category = this.categories.find(item => item.id === id);
+    const categoryExists = this.snapshot.categories.some(
+      category => category.id === categoryId,
+    );
 
-    if (
-      !category ||
-      !normalizedName ||
-      this.categories.some(
-        item =>
-          item.id !== id &&
-          item.name.toLowerCase() === normalizedName.toLowerCase(),
-      )
-    ) {
-      return false;
+    if (!categoryExists) {
+      return throwError(() => new Error('Choose a valid category before adding a type.'));
     }
 
-    category.name = normalizedName;
-    this.saveCategories();
-
-    return true;
-  }
-
-  addType(categoryId: number, name: string): ProductType | null {
-    const normalizedName = name.trim();
-
     if (
-      !this.categories.some(category => category.id === categoryId) ||
       !normalizedName ||
-      this.types.some(
+      this.snapshot.types.some(
         type =>
-          type.categoryId === categoryId &&
-          type.name.toLowerCase() === normalizedName.toLowerCase(),
+          type.categoryId === categoryId && this.sameName(type.name, normalizedName),
       )
     ) {
-      return null;
+      return throwError(() => new Error('Enter a unique type name for this category.'));
     }
 
-    const type: ProductType = {
-      id: this.nextId(this.types),
+    const request: CreateProductTypeRequest = {
       categoryId,
       name: normalizedName,
     };
 
-    this.types.push(type);
-    this.saveTypes();
-
-    return { ...type };
+    return this.dataSource.createType(request).pipe(
+      tap(type => {
+        this.snapshot = {
+          ...this.snapshot,
+          types: [...this.snapshot.types, type],
+        };
+      }),
+    );
   }
 
-  updateType(id: number, name: string): boolean {
+  updateType(id: number, name: string): Observable<ProductType | undefined> {
     const normalizedName = name.trim();
-    const type = this.types.find(item => item.id === id);
+    const current = this.snapshot.types.find(type => type.id === id);
 
-    if (
-      !type ||
-      !normalizedName ||
-      this.types.some(
-        item =>
-          item.id !== id &&
-          item.categoryId === type.categoryId &&
-          item.name.toLowerCase() === normalizedName.toLowerCase(),
-      )
-    ) {
-      return false;
+    if (!current) {
+      return of(undefined);
     }
 
-    type.name = normalizedName;
-    this.saveTypes();
+    if (
+      !normalizedName ||
+      this.snapshot.types.some(
+        type =>
+          type.id !== id &&
+          type.categoryId === current.categoryId &&
+          this.sameName(type.name, normalizedName),
+      )
+    ) {
+      return throwError(() => new Error('Enter a unique type name for this category.'));
+    }
 
-    return true;
+    const request: UpdateProductTypeRequest = { name: normalizedName };
+
+    return this.dataSource.updateType(id, request).pipe(
+      tap(updated => {
+        if (updated) {
+          this.snapshot = {
+            ...this.snapshot,
+            types: this.snapshot.types.map(type => (type.id === id ? updated : type)),
+          };
+        }
+      }),
+    );
   }
 
-  private saveCategories(): void {
-    this.storage.set(this.categoriesStorageKey, this.categories);
+  private copyCatalog(catalog: ProductCatalogSnapshot): ProductCatalogSnapshot {
+    return {
+      categories: catalog.categories.map(category => ({ ...category })),
+      types: catalog.types.map(type => ({ ...type })),
+    };
   }
 
-  private saveTypes(): void {
-    this.storage.set(this.typesStorageKey, this.types);
-  }
-
-  private nextId(items: { id: number }[]): number {
-    return Math.max(0, ...items.map(item => item.id)) + 1;
+  private sameName(first: string, second: string): boolean {
+    return first.trim().toLocaleLowerCase() === second.trim().toLocaleLowerCase();
   }
 }

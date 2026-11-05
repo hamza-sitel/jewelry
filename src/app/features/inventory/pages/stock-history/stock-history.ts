@@ -1,30 +1,31 @@
-
-import { Component, inject } from '@angular/core';
-import { StockOperationService } from '../../services/stock-operation.service';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import type {
-  StockOperation,
-  StockOperationType,
-} from '../../stock-operation.model';
+
+import { DEFAULT_PAGE_SIZE, Pagination } from '../../../../shared/components/pagination/pagination';
+import { StockOperationService } from '../../services/stock-operation.service';
+import type { StockOperation, StockOperationType } from '../../stock-operation.model';
 
 @Component({
   selector: 'app-stock-history',
   standalone: true,
-  imports:[FormsModule,RouterLink],
+  imports: [FormsModule, RouterLink, Pagination],
   templateUrl: './stock-history.html',
   styleUrl: './stock-history.scss',
 })
-export class StockHistory {
+export class StockHistory implements OnInit {
   private readonly stockOperationService = inject(StockOperationService);
+  private readonly destroyRef = inject(DestroyRef);
 
+  readonly pageSize = DEFAULT_PAGE_SIZE;
+  currentPage = 1;
   operations: StockOperation[] = [];
   selectedFilter: StockOperationType | 'ALL' = 'ALL';
-
   isLoading = true;
   errorMessage = '';
 
-  constructor() {
+  ngOnInit(): void {
     this.loadOperations();
   }
 
@@ -33,24 +34,36 @@ export class StockHistory {
       return this.operations;
     }
 
-    return this.operations.filter(
-      operation => operation.type === this.selectedFilter,
-    );
+    return this.operations.filter(operation => operation.type === this.selectedFilter);
+  }
+
+  get paginatedOperations(): StockOperation[] {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.filteredOperations.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  onFilterChange(): void {
+    this.currentPage = 1;
   }
 
   loadOperations(): void {
     this.isLoading = true;
+    this.errorMessage = '';
 
-    this.stockOperationService.getOperations().subscribe({
-      next: operations => {
-        this.operations = operations;
-        this.isLoading = false;
-      },
-      error: () => {
-        this.errorMessage = 'Unable to load stock history.';
-        this.isLoading = false;
-      },
-    });
+    this.stockOperationService
+      .getOperations()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: operations => {
+          this.operations = operations;
+          this.currentPage = 1;
+          this.isLoading = false;
+        },
+        error: () => {
+          this.errorMessage = 'Unable to load stock history.';
+          this.isLoading = false;
+        },
+      });
   }
 
   getOperationLabel(type: StockOperationType): string {
@@ -69,7 +82,6 @@ export class StockHistory {
       case 'PURCHASE':
       case 'MANUAL_ADD':
         return 'positive';
-
       case 'SALE':
       case 'MANUAL_REMOVE':
         return 'negative';
@@ -77,10 +89,7 @@ export class StockHistory {
   }
 
   getQuantityChange(operation: StockOperation): string {
-    const isPositive =
-      operation.type === 'PURCHASE' ||
-      operation.type === 'MANUAL_ADD';
-
+    const isPositive = operation.type === 'PURCHASE' || operation.type === 'MANUAL_ADD';
     return `${isPositive ? '+' : '-'}${operation.quantity}`;
   }
 

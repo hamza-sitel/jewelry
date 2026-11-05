@@ -1,111 +1,139 @@
-
 import { Injectable, inject } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, defer, of } from 'rxjs';
 
+import { BrowserStorageService } from '../../core/services/browser-storage.service';
 import type {
   CreateProductRequest,
   ProductResponse,
+  ProductTrackingMode,
   UpdateProductRequest,
 } from './product.model';
-
 import { MOCK_PRODUCTS } from './product.mock';
 import { ProductCatalogService } from './product-catalog.service';
 import type { ProductDataSource } from './product-data-source';
-
-import { BrowserStorageService } from '../../core/services/browser-storage.service';
 
 @Injectable()
 export class MockProductDataSource implements ProductDataSource {
   private readonly catalog = inject(ProductCatalogService);
   private readonly storage = inject(BrowserStorageService);
-
   private readonly storageKey = 'jewelry-stock.products';
 
   private products: ProductResponse[];
 
   constructor() {
-    const savedProducts = this.storage.get<ProductResponse[] | null>(
-      this.storageKey,
-      null,
-    );
+    const savedProducts = this.storage.get<unknown>(this.storageKey, null);
 
-    this.products = savedProducts ?? MOCK_PRODUCTS.map(product => ({
-      ...product,
-    }));
+    if (Array.isArray(savedProducts)) {
+      this.products = savedProducts
+        .filter(this.isRecord)
+        .map((product, index) => this.normalizeStoredProduct(product, index + 1));
 
-    // Initialize browser storage with the mock products only once.
-    if (savedProducts === null) {
+      // Convert the old tracking values once, preserving all existing quantities.
+      this.saveProducts();
+    } else {
+      this.products = MOCK_PRODUCTS.map(product => ({ ...product }));
       this.saveProducts();
     }
   }
 
   getAll(): Observable<ProductResponse[]> {
-    return of(
-      this.products.map(product => this.withCurrentNames(product)),
-    );
+    return of(this.products.map(product => this.withCurrentNames(product)));
   }
 
   getById(id: number): Observable<ProductResponse | undefined> {
     const product = this.products.find(item => item.id === id);
+    return of(product ? this.withCurrentNames(product) : undefined);
+  }
 
-    return of(
-      product ? this.withCurrentNames(product) : undefined,
+  getByBarcode(barcode: string): Observable<ProductResponse | undefined> {
+    const normalizedBarcode = barcode.trim().toLocaleUpperCase();
+    const product = this.products.find(
+      item => item.barcode.toLocaleUpperCase() === normalizedBarcode,
     );
+    return of(product ? this.withCurrentNames(product) : undefined);
   }
 
   create(request: CreateProductRequest): Observable<ProductResponse> {
-    const id = this.getNextId();
+    return defer(() => {
+      const id = this.getNextId();
+      const product: ProductResponse = {
+        ...request,
+        id,
+        barcode: `JWL${String(id).padStart(6, '0')}`,
+        name: request.name.trim(),
+        categoryName: this.catalog.getCategoryName(request.categoryId),
+        typeName: this.catalog.getTypeName(request.typeId),
+        status: 'ACTIVE',
+        imageUrl: request.imageUrl?.trim() || null,
+        createdAt: new Date().toISOString(),
+      };
 
-    const product: ProductResponse = {
-      id,
-      barcode: `JWL${String(id).padStart(6, '0')}`,
-      name: request.name.trim(),
-      categoryId: request.categoryId,
-      categoryName: this.catalog.getCategoryName(request.categoryId),
-      typeId: request.typeId,
-      typeName: this.catalog.getTypeName(request.typeId),
-      trackingMode: request.trackingMode,
-      weight: request.weight,
-      quantity: request.quantity,
-      purchasePrice: request.purchasePrice,
-      salePrice: request.salePrice,
-      status: 'ACTIVE',
-      imageUrl: request.imageUrl,
-      createdAt: new Date().toISOString(),
-    };
-
-    this.products.push(product);
-    this.saveProducts();
-
-    return of(this.withCurrentNames(product));
+      const updatedProducts = [...this.products, product];
+      this.storage.set(this.storageKey, updatedProducts);
+      this.products = updatedProducts;
+      return of(this.withCurrentNames(product));
+    });
   }
 
   update(
     id: number,
     request: UpdateProductRequest,
   ): Observable<ProductResponse | undefined> {
-    const product = this.products.find(item => item.id === id);
+    return defer(() => {
+      const existing = this.products.find(item => item.id === id);
 
-    if (!product) {
-      return of(undefined);
-    }
+      if (!existing) {
+        return of(undefined);
+      }
 
-    product.name = request.name.trim();
-    product.categoryId = request.categoryId;
-    product.categoryName = this.catalog.getCategoryName(request.categoryId);
-    product.typeId = request.typeId;
-    product.typeName = this.catalog.getTypeName(request.typeId);
-    product.trackingMode = request.trackingMode;
-    product.weight = request.weight;
-    product.quantity = request.quantity;
-    product.purchasePrice = request.purchasePrice;
-    product.salePrice = request.salePrice;
-    product.imageUrl = request.imageUrl;
+      const updatedProduct: ProductResponse = {
+        ...existing,
+        ...request,
+        // These server-owned or stock-owned values cannot be changed by this request.
+        id: existing.id,
+        barcode: existing.barcode,
+        trackingMode: existing.trackingMode,
+        quantity: existing.quantity,
+        status: existing.status,
+        createdAt: existing.createdAt,
+        categoryName: this.catalog.getCategoryName(request.categoryId),
+        typeName: this.catalog.getTypeName(request.typeId),
+        name: request.name.trim(),
+        imageUrl: request.imageUrl?.trim() || null,
+      };
 
-    // The product ID, barcode and creation date remain unchanged.
-    this.saveProducts();
+      const updatedProducts = this.products.map(product =>
+        product.id === id ? updatedProduct : product,
+      );
+      this.storage.set(this.storageKey, updatedProducts);
+      this.products = updatedProducts;
+      return of(this.withCurrentNames(updatedProduct));
+    });
+  }
 
-    return of(this.withCurrentNames(product));
+  updateStockQuantity(
+    id: number,
+    quantity: number,
+  ): Observable<ProductResponse | undefined> {
+    return defer(() => {
+      const product = this.products.find(item => item.id === id);
+
+      if (!product) {
+        return of(undefined);
+      }
+
+      if (!Number.isSafeInteger(quantity) || quantity < 0) {
+        throw new Error('Stock quantity must be a non-negative whole number.');
+      }
+
+      const updatedProduct = { ...product, quantity };
+      const updatedProducts = this.products.map(item =>
+        item.id === id ? updatedProduct : item,
+      );
+      this.storage.set(this.storageKey, updatedProducts);
+      this.products = updatedProducts;
+      return of(this.withCurrentNames(updatedProduct));
+    });
   }
 
   archive(id: number): Observable<ProductResponse | undefined> {
@@ -120,27 +148,61 @@ export class MockProductDataSource implements ProductDataSource {
     id: number,
     status: ProductResponse['status'],
   ): Observable<ProductResponse | undefined> {
-    const product = this.products.find(item => item.id === id);
+    return defer(() => {
+      const product = this.products.find(item => item.id === id);
 
-    if (!product) {
-      return of(undefined);
-    }
+      if (!product) {
+        return of(undefined);
+      }
 
-    product.status = status;
-    this.saveProducts();
-
-    return of(this.withCurrentNames(product));
+      const updatedProduct = { ...product, status };
+      const updatedProducts = this.products.map(item =>
+        item.id === id ? updatedProduct : item,
+      );
+      this.storage.set(this.storageKey, updatedProducts);
+      this.products = updatedProducts;
+      return of(this.withCurrentNames(updatedProduct));
+    });
   }
 
-  private getNextId(): number {
-    return Math.max(
-      0,
-      ...this.products.map(product => product.id),
-    ) + 1;
-  }
+  private normalizeStoredProduct(
+    value: Record<string, unknown>,
+    fallbackId: number,
+  ): ProductResponse {
+    const id = this.toPositiveInteger(value['id']) ?? fallbackId;
+    const weight = this.toPositiveNumber(value['weight']);
+    // Old records with a positive per-piece weight become WEIGHTED; all others become PIECE.
+    // Quantity is preserved for both modes and is not restricted by tracking mode.
+    const trackingMode: ProductTrackingMode = weight !== null ? 'WEIGHTED' : 'PIECE';
+    const normalizedWeight = trackingMode === 'PIECE' ? null : weight;
+    const quantity = this.toNonNegativeInteger(value['quantity']) ?? 0;
+    const categoryId = this.toPositiveInteger(value['categoryId']) ?? 1;
+    const typeId = this.toPositiveInteger(value['typeId']) ?? 1;
 
-  private saveProducts(): void {
-    this.storage.set(this.storageKey, this.products);
+    return {
+      id,
+      barcode:
+        typeof value['barcode'] === 'string' && value['barcode'].trim()
+          ? value['barcode']
+          : `JWL${String(id).padStart(6, '0')}`,
+      name: typeof value['name'] === 'string' ? value['name'] : 'Unnamed product',
+      categoryId,
+      categoryName:
+        typeof value['categoryName'] === 'string' ? value['categoryName'] : '',
+      typeId,
+      typeName: typeof value['typeName'] === 'string' ? value['typeName'] : '',
+      trackingMode,
+      weight: normalizedWeight,
+      quantity,
+      purchasePrice: this.toNonNegativeNumber(value['purchasePrice']) ?? 0,
+      salePrice: this.toNonNegativeNumber(value['salePrice']) ?? 0,
+      status: value['status'] === 'ARCHIVED' ? 'ARCHIVED' : 'ACTIVE',
+      imageUrl: typeof value['imageUrl'] === 'string' ? value['imageUrl'] : null,
+      createdAt:
+        typeof value['createdAt'] === 'string'
+          ? value['createdAt']
+          : new Date().toISOString(),
+    };
   }
 
   private withCurrentNames(product: ProductResponse): ProductResponse {
@@ -149,5 +211,41 @@ export class MockProductDataSource implements ProductDataSource {
       categoryName: this.catalog.getCategoryName(product.categoryId),
       typeName: this.catalog.getTypeName(product.typeId),
     };
+  }
+
+  private saveProducts(): void {
+    this.storage.set(this.storageKey, this.products);
+  }
+
+  private getNextId(): number {
+    return Math.max(0, ...this.products.map(product => product.id)) + 1;
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+  }
+
+  private toPositiveInteger(value: unknown): number | null {
+    return typeof value === 'number' && Number.isSafeInteger(value) && value > 0
+      ? value
+      : null;
+  }
+
+  private toNonNegativeInteger(value: unknown): number | null {
+    return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
+      ? value
+      : null;
+  }
+
+  private toPositiveNumber(value: unknown): number | null {
+    return typeof value === 'number' && Number.isFinite(value) && value > 0
+      ? value
+      : null;
+  }
+
+  private toNonNegativeNumber(value: unknown): number | null {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0
+      ? value
+      : null;
   }
 }

@@ -1,4 +1,3 @@
-
 <div class="operation-page">
   <header class="page-header">
     <div>
@@ -6,10 +5,7 @@
       <h1>Stock operation</h1>
       <p>Record purchases, sales and stock adjustments.</p>
     </div>
-
-    <a routerLink="/products" class="back-link">
-      Back to products
-    </a>
+    <a routerLink="/products" class="back-link">Back to products</a>
   </header>
 
   <section class="operation-card">
@@ -23,19 +19,16 @@
     <form (ngSubmit)="submitOperation()">
       <div class="form-group">
         <label for="product">Product</label>
-
         <select
           id="product"
           name="product"
           [(ngModel)]="selectedProductId"
+          (ngModelChange)="onSelectedProductChange()"
           required
         >
           <option [ngValue]="null" disabled>Select a product</option>
-
           @for (product of products; track product.id) {
-            <option [ngValue]="product.id">
-              {{ product.name }} — {{ product.barcode }}
-            </option>
+            <option [ngValue]="product.id">{{ product.name }} — {{ product.barcode }}</option>
           }
         </select>
       </div>
@@ -46,12 +39,10 @@
             <span class="summary-label">CURRENT STOCK</span>
             <strong>{{ product.quantity }} pieces</strong>
           </div>
-
           <div>
             <span class="summary-label">TRACKING MODE</span>
-            <strong>{{ product.trackingMode }}</strong>
+            <strong>{{ product.trackingMode | productTrackingModeLabel }}</strong>
           </div>
-
           <div>
             <span class="summary-label">SALE PRICE</span>
             <strong>{{ formatPrice(product.salePrice) }}</strong>
@@ -61,13 +52,7 @@
 
       <div class="form-group">
         <label for="operationType">Operation type</label>
-
-        <select
-          id="operationType"
-          name="operationType"
-          [(ngModel)]="operationType"
-          required
-        >
+        <select id="operationType" name="operationType" [(ngModel)]="operationType" required>
           <option value="SALE">Sale — decrease stock</option>
           <option value="PURCHASE">Purchase — increase stock</option>
           <option value="MANUAL_ADD">Manual addition</option>
@@ -77,7 +62,6 @@
 
       <div class="form-group">
         <label for="quantity">Quantity</label>
-
         <input
           id="quantity"
           name="quantity"
@@ -87,15 +71,13 @@
           [(ngModel)]="quantity"
           required
         />
-
         <span class="field-hint">
-          Enter the number of pieces, not the total weight.
+          Enter the number of pieces. For weighted products, the recorded weight is per piece.
         </span>
       </div>
 
       <div class="form-group">
         <label for="notes">Notes <span>(optional)</span></label>
-
         <textarea
           id="notes"
           name="notes"
@@ -106,22 +88,13 @@
       </div>
 
       @if (successMessage) {
-        <div class="message success-message">
-          {{ successMessage }}
-        </div>
+        <div class="message success-message" role="status">{{ successMessage }}</div>
       }
-
       @if (errorMessage) {
-        <div class="message error-message">
-          {{ errorMessage }}
-        </div>
+        <div class="message error-message" role="alert">{{ errorMessage }}</div>
       }
 
-      <button
-        type="submit"
-        class="submit-button"
-        [disabled]="isLoading || products.length === 0"
-      >
+      <button type="submit" class="submit-button" [disabled]="isLoading || products.length === 0">
         {{ isLoading ? 'Saving...' : 'Save operation' }}
       </button>
     </form>

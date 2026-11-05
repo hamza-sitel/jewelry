@@ -1,24 +1,18 @@
-
 import { Injectable, inject } from '@angular/core';
-import { Observable, throwError, switchMap } from 'rxjs';
+import { Observable, switchMap, throwError } from 'rxjs';
 
 import { ProductService } from '../../products/product.service';
 import type { ProductResponse } from '../../products/product.model';
-
+import { STOCK_OPERATION_DATA_SOURCE } from '../stock-operation-data-source';
+import type { StockOperationDataSource } from '../stock-operation-data-source';
 import type {
   StockOperation,
   StockOperationType,
 } from '../stock-operation.model';
 
-import { STOCK_OPERATION_DATA_SOURCE } from '../stock-operation-data-source';
-import type { StockOperationDataSource } from '../stock-operation-data-source';
-
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class StockOperationService {
   private readonly productService = inject(ProductService);
-
   private readonly dataSource: StockOperationDataSource = inject(
     STOCK_OPERATION_DATA_SOURCE,
   );
@@ -27,9 +21,7 @@ export class StockOperationService {
     return this.dataSource.getAll();
   }
 
-  getOperationsByProduct(
-    productId: number,
-  ): Observable<StockOperation[]> {
+  getOperationsByProduct(productId: number): Observable<StockOperation[]> {
     return this.dataSource.getByProduct(productId);
   }
 
@@ -39,7 +31,7 @@ export class StockOperationService {
     quantity: number,
     notes: string | null = null,
   ): Observable<StockOperation> {
-    if (!Number.isInteger(quantity) || quantity <= 0) {
+    if (!Number.isSafeInteger(quantity) || quantity <= 0) {
       return throwError(
         () => new Error('Quantity must be a positive whole number.'),
       );
@@ -60,11 +52,7 @@ export class StockOperationService {
           );
         }
 
-        const newStock = this.calculateNewStock(
-          product,
-          type,
-          quantity,
-        );
+        const newStock = this.calculateNewStock(product, type, quantity);
 
         if (newStock < 0) {
           return throwError(
@@ -72,24 +60,14 @@ export class StockOperationService {
           );
         }
 
-        return this.productService.updateProduct(productId, {
-          name: product.name,
-          categoryId: product.categoryId,
-          typeId: product.typeId,
-          trackingMode: product.trackingMode,
-          weight: product.weight,
-          quantity: newStock,
-          purchasePrice: product.purchasePrice,
-          salePrice: product.salePrice,
-          imageUrl: product.imageUrl,
-        }).pipe(
+        return this.productService.updateStockQuantity(productId, newStock).pipe(
           switchMap(updatedProduct => {
             if (!updatedProduct) {
-              return throwError(
-                () => new Error('Unable to update product stock.'),
-              );
+              return throwError(() => new Error('Unable to update product stock.'));
             }
 
+            // The mock implementation persists this after the stock write.
+            // Phase 3 moves both writes into one Spring Boot database transaction.
             return this.dataSource.create({
               productId: product.id,
               productName: product.name,

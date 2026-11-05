@@ -1,4 +1,3 @@
-
 import {
   AfterViewInit,
   Component,
@@ -8,19 +7,19 @@ import {
   inject,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
 import type { ProductResponse } from '../../product.model';
 import { ProductService } from '../../product.service';
-
 import { StockOperationService } from '../../../inventory/services/stock-operation.service';
 import type { StockOperationType } from '../../../inventory/stock-operation.model';
+import { ProductTrackingModeLabelPipe } from '../../../../shared/pipes/product-tracking-mode.pipe';
 
 @Component({
   selector: 'app-barcode-scan',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, ProductTrackingModeLabelPipe],
   templateUrl: './barcode-scan.html',
   styleUrl: './barcode-scan.scss',
 })
@@ -35,14 +34,11 @@ export class BarcodeScan implements AfterViewInit {
   barcodeValue = '';
   lastScannedBarcode = '';
   scannedProduct: ProductResponse | null = null;
-
   isSearching = false;
   isSaving = false;
-
   errorMessage = '';
   operationErrorMessage = '';
   operationSuccessMessage = '';
-
   operationType: StockOperationType = 'SALE';
   operationQuantity = 1;
   operationNotes = '';
@@ -56,7 +52,7 @@ export class BarcodeScan implements AfterViewInit {
   }
 
   searchBarcode(): void {
-    const barcode = this.barcodeValue.trim().toUpperCase();
+    const barcode = this.barcodeValue.trim().toLocaleUpperCase();
 
     if (!barcode || this.isSearching) {
       return;
@@ -64,25 +60,20 @@ export class BarcodeScan implements AfterViewInit {
 
     this.lastScannedBarcode = barcode;
     this.scannedProduct = null;
+    this.operationQuantity = 1;
     this.errorMessage = '';
     this.clearOperationMessages();
     this.isSearching = true;
 
     this.productService
-      .getProducts()
+      .getProductByBarcode(barcode)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: products => {
-          const product =
-            products.find(
-              item => item.barcode.toUpperCase() === barcode,
-            ) ?? null;
-
-          this.scannedProduct = product;
+        next: product => {
+          this.scannedProduct = product ?? null;
 
           if (!product) {
-            this.errorMessage =
-              `No product found for barcode "${barcode}".`;
+            this.errorMessage = `No product found for barcode "${barcode}".`;
           } else if (product.status === 'ARCHIVED') {
             this.operationErrorMessage =
               'This product is archived. Restore it before performing stock operations.';
@@ -93,9 +84,7 @@ export class BarcodeScan implements AfterViewInit {
           this.focusBarcodeInput();
         },
         error: () => {
-          this.errorMessage =
-            'Unable to search products. Please try again.';
-
+          this.errorMessage = 'Unable to search products. Please try again.';
           this.isSearching = false;
           this.focusBarcodeInput();
         },
@@ -116,17 +105,12 @@ export class BarcodeScan implements AfterViewInit {
       return;
     }
 
-    if (
-      !Number.isInteger(this.operationQuantity) ||
-      this.operationQuantity <= 0
-    ) {
-      this.operationErrorMessage =
-        'Quantity must be a positive whole number.';
+    if (!Number.isSafeInteger(this.operationQuantity) || this.operationQuantity <= 0) {
+      this.operationErrorMessage = 'Quantity must be a positive whole number.';
       return;
     }
 
     this.isSaving = true;
-
     const productId = this.scannedProduct.id;
 
     this.stockOperationService
@@ -148,15 +132,12 @@ export class BarcodeScan implements AfterViewInit {
 
           this.operationSuccessMessage =
             `Operation saved successfully. New stock: ${operation.newStock} piece(s).`;
-
           this.operationQuantity = 1;
           this.operationNotes = '';
           this.isSaving = false;
         },
         error: error => {
-          this.operationErrorMessage =
-            error?.message || 'Unable to save stock operation.';
-
+          this.operationErrorMessage = error?.message ?? 'Unable to save stock operation.';
           this.isSaving = false;
         },
       });
@@ -167,11 +148,9 @@ export class BarcodeScan implements AfterViewInit {
     this.lastScannedBarcode = '';
     this.errorMessage = '';
     this.barcodeValue = '';
-
     this.operationType = 'SALE';
     this.operationQuantity = 1;
     this.operationNotes = '';
-
     this.clearOperationMessages();
     this.focusBarcodeInput();
   }
@@ -202,5 +181,4 @@ export class BarcodeScan implements AfterViewInit {
   private focusBarcodeInput(): void {
     this.barcodeInput?.nativeElement.focus();
   }
-  
 }

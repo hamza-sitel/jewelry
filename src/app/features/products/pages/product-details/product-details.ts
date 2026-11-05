@@ -1,22 +1,22 @@
-
-import { Component, DestroyRef, inject } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { ProductService } from '../../product.service';
 import type { ProductResponse } from '../../product.model';
-
 import { StockOperationService } from '../../../inventory/services/stock-operation.service';
 import type { StockOperation } from '../../../inventory/stock-operation.model';
+import { ProductTrackingModeLabelPipe } from '../../../../shared/pipes/product-tracking-mode.pipe';
+import { DEFAULT_PAGE_SIZE, Pagination } from '../../../../shared/components/pagination/pagination';
 
 @Component({
   selector: 'app-product-details',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, ProductTrackingModeLabelPipe, Pagination],
   templateUrl: './product-details.html',
   styleUrl: './product-details.scss',
 })
-export class ProductDetails {
+export class ProductDetails implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly productService = inject(ProductService);
   private readonly stockOperationService = inject(StockOperationService);
@@ -25,14 +25,15 @@ export class ProductDetails {
   product: ProductResponse | null = null;
   isUpdatingStatus = false;
   operations: StockOperation[] = [];
-
+  readonly pageSize = DEFAULT_PAGE_SIZE;
+  currentOperationPage = 1;
   isLoading = true;
   errorMessage = '';
 
   ngOnInit(): void {
     const productId = Number(this.route.snapshot.paramMap.get('id'));
 
-    if (!Number.isInteger(productId) || productId <= 0) {
+    if (!Number.isSafeInteger(productId) || productId <= 0) {
       this.errorMessage = 'Invalid product ID.';
       this.isLoading = false;
       return;
@@ -71,6 +72,7 @@ export class ProductDetails {
       .subscribe({
         next: operations => {
           this.operations = operations;
+          this.currentOperationPage = 1;
           this.isLoading = false;
         },
         error: () => {
@@ -78,6 +80,11 @@ export class ProductDetails {
           this.isLoading = false;
         },
       });
+  }
+
+  get paginatedOperations(): StockOperation[] {
+    const startIndex = (this.currentOperationPage - 1) * this.pageSize;
+    return this.operations.slice(startIndex, startIndex + this.pageSize);
   }
 
   formatPrice(price: number): string {
@@ -115,71 +122,62 @@ export class ProductDetails {
 
     return labels[type];
   }
+
   archiveProduct(): void {
-  if (!this.product || this.isUpdatingStatus) {
-    return;
+    if (!this.product || this.isUpdatingStatus) {
+      return;
+    }
+
+    this.isUpdatingStatus = true;
+    this.productService
+      .archiveProduct(this.product.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: product => {
+          if (product) {
+            this.product = product;
+          }
+          this.isUpdatingStatus = false;
+        },
+        error: () => {
+          this.errorMessage = 'Unable to archive product.';
+          this.isUpdatingStatus = false;
+        },
+      });
   }
 
-  this.isUpdatingStatus = true;
+  restoreProduct(): void {
+    if (!this.product || this.isUpdatingStatus) {
+      return;
+    }
 
-  this.productService
-    .archiveProduct(this.product.id)
-    .pipe(takeUntilDestroyed(this.destroyRef))
-    .subscribe({
-      next: product => {
-        if (product) {
-          this.product = product;
-        }
-
-        this.isUpdatingStatus = false;
-      },
-      error: () => {
-        this.errorMessage = 'Unable to archive product.';
-        this.isUpdatingStatus = false;
-      },
-    });
-}
-
-
-restoreProduct(): void {
-  if (!this.product || this.isUpdatingStatus) {
-    return;  }
-
-  this.isUpdatingStatus = true;
-
-  this.productService
-    .restoreProduct(this.product.id)
-    .pipe(takeUntilDestroyed(this.destroyRef))
-    .subscribe({
-      next: product => {
-        if (product) {
-          this.product = product;
-        }
-
-        this.isUpdatingStatus = false;
-      },
-      error: () => {
-        this.errorMessage = 'Unable to restore product.';
-        this.isUpdatingStatus = false;
-      },
-    });
-}
-
+    this.isUpdatingStatus = true;
+    this.productService
+      .restoreProduct(this.product.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: product => {
+          if (product) {
+            this.product = product;
+          }
+          this.isUpdatingStatus = false;
+        },
+        error: () => {
+          this.errorMessage = 'Unable to restore product.';
+          this.isUpdatingStatus = false;
+        },
+      });
+  }
 
   get totalPurchaseValue(): number {
-  if (!this.product) return 0;
-
-  return this.product.quantity * this.product.purchasePrice;
+    return this.product ? this.product.quantity * this.product.purchasePrice : 0;
   }
 
   get totalSalesValue(): number {
-  if (!this.product) return 0;
-
-  return this.product.quantity * this.product.salePrice;
+    return this.product ? this.product.quantity * this.product.salePrice : 0;
   }
 
   get expectedGrossProfit(): number {
-  return this.totalSalesValue - this.totalPurchaseValue;
-  } 
+    return this.totalSalesValue - this.totalPurchaseValue;
+  }
 }
-

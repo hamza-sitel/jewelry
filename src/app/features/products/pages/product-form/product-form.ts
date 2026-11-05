@@ -1,5 +1,5 @@
-
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
@@ -8,8 +8,8 @@ import type {
   ProductCategory,
   ProductTrackingMode,
   ProductType,
+  UpdateProductRequest,
 } from '../../product.model';
-
 import { ProductService } from '../../product.service';
 import { ProductCatalogService } from '../../product-catalog.service';
 
@@ -25,45 +25,61 @@ export class ProductForm implements OnInit {
   private readonly catalog = inject(ProductCatalogService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   productId: number | null = null;
   isEditMode = false;
-  isLoading = false;
+  isLoading = true;
   isSaving = false;
 
-  trackingMode: ProductTrackingMode = 'INDIVIDUAL';
-
+  trackingMode: ProductTrackingMode = 'PIECE';
   name = '';
   categoryId = 1;
   typeId = 1;
-
   weight: number | null = null;
   quantity = 1;
-
   purchasePrice: number | null = null;
   salePrice: number | null = null;
+  imageUrl = '';
 
   newCategoryName = '';
   newTypeName = '';
-
   categoryMessage = '';
   typeMessage = '';
   errorMessage = '';
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
+    this.isEditMode = Number.isSafeInteger(id) && id > 0;
+    this.productId = this.isEditMode ? id : null;
 
-    if (Number.isInteger(id) && id > 0) {
-      this.productId = id;
-      this.isEditMode = true;
-      this.loadProduct(id);
-    } else {
-      this.typeId = this.types[0]?.id ?? 0;
-    }
+    this.catalog
+      .loadCatalog()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          if (this.isEditMode && this.productId !== null) {
+            this.loadProduct(this.productId);
+            return;
+          }
+
+          this.categoryId = this.categories[0]?.id ?? 0;
+          this.typeId = this.types[0]?.id ?? 0;
+          this.isLoading = false;
+        },
+        error: () => {
+          this.errorMessage = 'Unable to load categories and product types.';
+          this.isLoading = false;
+        },
+      });
   }
 
   get categories(): ProductCategory[] {
     return this.catalog.getCategories();
+  }
+
+  get types(): ProductType[] {
+    return this.catalog.getTypesForCategory(this.categoryId);
   }
 
   get selectedCategoryName(): string {
@@ -73,55 +89,60 @@ export class ProductForm implements OnInit {
     );
   }
 
-  get types(): ProductType[] {
-    return this.catalog.getTypesForCategory(this.categoryId);
-  }
+  get quantityHint(): string {
+    if (this.isEditMode) {
+      return 'Stock quantity is changed through stock operations, not product editing.';
+    }
 
-  get selectedCategoryHasTypes(): boolean {
-    return this.catalog.categoryHasTypes(this.categoryId);
+    return this.trackingMode === 'WEIGHTED'
+      ? 'Enter the number of pieces. The recorded weight applies to each piece.'
+      : 'Enter the number of pieces. No weight will be recorded for this product.';
   }
 
   private loadProduct(id: number): void {
-    this.isLoading = true;
-    this.errorMessage = '';
+    this.productService
+      .getProductById(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: product => {
+          this.isLoading = false;
 
-    this.productService.getProductById(id).subscribe({
-      next: product => {
-        this.isLoading = false;
+          if (!product) {
+            this.errorMessage = 'Product not found.';
+            return;
+          }
 
-        if (!product) {
-          this.errorMessage = 'Product not found.';
-          return;
-        }
-
-        this.name = product.name;
-        this.categoryId = product.categoryId;
-        this.typeId = product.typeId;
-        this.trackingMode = product.trackingMode;
-        this.weight = product.weight;
-        this.quantity = product.quantity;
-        this.purchasePrice = product.purchasePrice;
-        this.salePrice = product.salePrice;
-      },
-      error: () => {
-        this.isLoading = false;
-        this.errorMessage = 'Unable to load this product.';
-      },
-    });
+          this.name = product.name;
+          this.categoryId = product.categoryId;
+          this.typeId = product.typeId;
+          this.trackingMode = product.trackingMode;
+          this.weight = product.weight;
+          this.quantity = product.quantity;
+          this.purchasePrice = product.purchasePrice;
+          this.salePrice = product.salePrice;
+          this.imageUrl = product.imageUrl ?? '';
+        },
+        error: () => {
+          this.isLoading = false;
+          this.errorMessage = 'Unable to load this product.';
+        },
+      });
   }
 
   onCategoryChange(): void {
     this.typeMessage = '';
     this.typeId = this.types[0]?.id ?? 0;
 
-    if (!this.selectedCategoryHasTypes) {
-      this.typeMessage =
-        'Add at least one type for this category before saving.';
+    if (this.types.length === 0) {
+      this.typeMessage = 'Add at least one type for this category before saving.';
     }
   }
 
+  /** Switching to PIECE removes grams; switching to WEIGHTED requires per-piece grams. */
   onTrackingModeChange(): void {
-    if (this.trackingMode === 'INDIVIDUAL') {
+    this.errorMessage = '';
+
+    if (this.trackingMode === 'PIECE') {
       this.weight = null;
     }
   }
@@ -129,39 +150,45 @@ export class ProductForm implements OnInit {
   addCategory(): void {
     this.categoryMessage = '';
 
-    const category = this.catalog.addCategory(this.newCategoryName);
-
-    if (!category) {
-      this.categoryMessage =
-        'Enter a name that is not empty or already used.';
-      return;
-    }
-
-    this.categoryId = category.id;
-    this.typeId = 0;
-    this.newCategoryName = '';
-
-    this.categoryMessage =
-      'Category created. Now add at least one type for this category.';
-    this.typeMessage =
-      'A type is required before you can save a product.';
+    this.catalog
+      .addCategory(this.newCategoryName)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: category => {
+          this.categoryId = category.id;
+          this.typeId = 0;
+          this.newCategoryName = '';
+          this.categoryMessage = 'Category created. Now add at least one type.';
+          this.typeMessage = 'A type is required before you can save a product.';
+        },
+        error: error => {
+          this.categoryMessage = error?.message ?? 'Unable to create this category.';
+        },
+      });
   }
 
   addType(): void {
     this.typeMessage = '';
 
-    const type = this.catalog.addType(this.categoryId, this.newTypeName);
-
-    if (!type) {
-      this.typeMessage =
-        'Enter a type name that is not empty or already used in this category.';
+    if (this.categoryId <= 0) {
+      this.typeMessage = 'Create or select a category first.';
       return;
     }
 
-    this.typeId = type.id;
-    this.newTypeName = '';
-    this.typeMessage = `Type "${type.name}" added to ${this.selectedCategoryName}.`;
-    this.categoryMessage = '';
+    this.catalog
+      .addType(this.categoryId, this.newTypeName)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: type => {
+          this.typeId = type.id;
+          this.newTypeName = '';
+          this.typeMessage = `Type "${type.name}" added to ${this.selectedCategoryName}.`;
+          this.categoryMessage = '';
+        },
+        error: error => {
+          this.typeMessage = error?.message ?? 'Unable to add this type.';
+        },
+      });
   }
 
   onSubmit(): void {
@@ -170,69 +197,46 @@ export class ProductForm implements OnInit {
     }
 
     this.errorMessage = '';
-
     const name = this.name.trim();
 
-    // 1. Product name
     if (!name) {
       this.errorMessage = 'Enter a product name.';
       return;
     }
 
-    // 2. Category
-    const validCategory = this.categories.some(
-      category => category.id === this.categoryId
-    );
-
-    if (!validCategory) {
+    if (!this.categories.some(category => category.id === this.categoryId)) {
       this.errorMessage = 'Select a valid product category.';
       return;
     }
 
-    // 3. Type must belong to the selected category
-    if (
-      !this.selectedCategoryHasTypes ||
-      !this.types.some(type => type.id === this.typeId)
-    ) {
-      this.errorMessage =
-        'Add or select a valid type for the selected category.';
+    if (!this.types.some(type => type.id === this.typeId)) {
+      this.errorMessage = 'Select a valid type for the selected category.';
       return;
     }
 
-    // 4. Tracking mode
-    if (
-      this.trackingMode !== 'INDIVIDUAL' &&
-      this.trackingMode !== 'QUANTITY'
-    ) {
+    if (this.trackingMode !== 'PIECE' && this.trackingMode !== 'WEIGHTED') {
       this.errorMessage = 'Select a valid tracking mode.';
       return;
     }
 
-    // 5. Quantity
-    if (!Number.isInteger(this.quantity) || this.quantity < 1) {
-      this.errorMessage = 'Quantity must be a whole number of at least 1.';
+    if (!this.isEditMode && (!Number.isSafeInteger(this.quantity) || this.quantity < 1)) {
+      this.errorMessage = 'Quantity must be a positive whole number for either tracking mode.';
       return;
     }
 
-    // 6. Individual pieces cannot have weight
-    if (this.trackingMode === 'INDIVIDUAL' && this.weight !== null) {
-      this.errorMessage =
-        'Individual-piece products cannot have a weight. Clear the weight or choose quantity-based tracking.';
+    if (this.trackingMode === 'PIECE' && this.weight !== null) {
+      this.errorMessage = 'Piece-based products cannot have a recorded weight.';
       return;
     }
 
-    // 7. Quantity-based products can have optional weight
     if (
-      this.trackingMode === 'QUANTITY' &&
-      this.weight !== null &&
-      (!Number.isFinite(this.weight) || this.weight <= 0)
+      this.trackingMode === 'WEIGHTED' &&
+      (this.weight === null || !Number.isFinite(this.weight) || this.weight <= 0)
     ) {
-      this.errorMessage =
-        'Weight must be greater than zero or left empty.';
+      this.errorMessage = 'Enter the exact weight per piece, greater than zero.';
       return;
     }
 
-    // 8. Prices
     if (
       this.purchasePrice === null ||
       this.salePrice === null ||
@@ -245,26 +249,28 @@ export class ProductForm implements OnInit {
       return;
     }
 
-    const request: CreateProductRequest = {
+    const details: UpdateProductRequest = {
       name,
       categoryId: this.categoryId,
       typeId: this.typeId,
-      trackingMode: this.trackingMode,
-      weight: this.trackingMode === 'INDIVIDUAL' ? null : this.weight,
-      quantity: this.quantity,
+      weight: this.trackingMode === 'PIECE' ? null : this.weight,
       purchasePrice: this.purchasePrice,
       salePrice: this.salePrice,
-      imageUrl: null,
+      imageUrl: this.imageUrl.trim() || null,
     };
 
     this.isSaving = true;
 
-    const operation =
+    const saveOperation =
       this.isEditMode && this.productId !== null
-        ? this.productService.updateProduct(this.productId, request)
-        : this.productService.createProduct(request);
+        ? this.productService.updateProduct(this.productId, details)
+        : this.productService.createProduct({
+            ...details,
+            trackingMode: this.trackingMode,
+            quantity: this.quantity,
+          } satisfies CreateProductRequest);
 
-    operation.subscribe({
+    saveOperation.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: product => {
         this.isSaving = false;
 
@@ -275,11 +281,9 @@ export class ProductForm implements OnInit {
 
         void this.router.navigate(['/products']);
       },
-      error: () => {
+      error: error => {
         this.isSaving = false;
-        this.errorMessage = this.isEditMode
-          ? 'Unable to update the product. Please try again.'
-          : 'Unable to create the product. Please try again.';
+        this.errorMessage = error?.message ?? 'Unable to save the product. Please try again.';
       },
     });
   }

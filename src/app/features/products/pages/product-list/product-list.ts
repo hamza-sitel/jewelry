@@ -1,7 +1,6 @@
-
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import type {
@@ -10,9 +9,10 @@ import type {
   ProductTrackingMode,
   ProductType,
 } from '../../product.model';
-
 import { ProductService } from '../../product.service';
 import { ProductCatalogService } from '../../product-catalog.service';
+import { ProductTrackingModeLabelPipe } from '../../../../shared/pipes/product-tracking-mode.pipe';
+import { DEFAULT_PAGE_SIZE, Pagination } from '../../../../shared/components/pagination/pagination';
 
 type StockFilter = 'ALL' | 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
 type StatusFilter = 'ALL' | 'ACTIVE' | 'ARCHIVED';
@@ -20,7 +20,7 @@ type StatusFilter = 'ALL' | 'ACTIVE' | 'ARCHIVED';
 @Component({
   selector: 'app-product-list',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, ProductTrackingModeLabelPipe, Pagination],
   templateUrl: './product-list.html',
   styleUrl: './product-list.scss',
 })
@@ -30,15 +30,15 @@ export class ProductList implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   products: ProductResponse[] = [];
-
+  readonly pageSize = DEFAULT_PAGE_SIZE;
+  currentPage = 1;
   searchTerm = '';
   selectedCategoryId: number | 'ALL' = 'ALL';
   selectedTypeId: number | 'ALL' = 'ALL';
   selectedTrackingMode: ProductTrackingMode | 'ALL' = 'ALL';
   selectedStockFilter: StockFilter = 'ALL';
   selectedStatus: StatusFilter = 'ALL';
-
-  isLoading = false;
+  isLoading = true;
   errorMessage = '';
 
   ngOnInit(): void {
@@ -50,15 +50,13 @@ export class ProductList implements OnInit {
   }
 
   get availableTypes(): ProductType[] {
-    if (this.selectedCategoryId === 'ALL') {
-      return this.catalog.getTypes();
-    }
-
-    return this.catalog.getTypesForCategory(this.selectedCategoryId);
+    return this.selectedCategoryId === 'ALL'
+      ? this.catalog.getTypes()
+      : this.catalog.getTypesForCategory(this.selectedCategoryId);
   }
 
   get filteredProducts(): ProductResponse[] {
-    const term = this.searchTerm.trim().toLowerCase();
+    const term = this.searchTerm.trim().toLocaleLowerCase();
 
     return this.products.filter(product => {
       const matchesSearch =
@@ -69,22 +67,18 @@ export class ProductList implements OnInit {
           product.categoryName,
           product.typeName,
           product.trackingMode,
-        ].some(value => value.toLowerCase().includes(term));
+        ].some(value => value.toLocaleLowerCase().includes(term));
 
       const matchesCategory =
         this.selectedCategoryId === 'ALL' ||
         product.categoryId === this.selectedCategoryId;
-
       const matchesType =
-        this.selectedTypeId === 'ALL' ||
-        product.typeId === this.selectedTypeId;
-
+        this.selectedTypeId === 'ALL' || product.typeId === this.selectedTypeId;
       const matchesTracking =
         this.selectedTrackingMode === 'ALL' ||
         product.trackingMode === this.selectedTrackingMode;
 
       let matchesStock = true;
-
       if (this.selectedStockFilter === 'IN_STOCK') {
         matchesStock = product.quantity > 0;
       } else if (this.selectedStockFilter === 'LOW_STOCK') {
@@ -94,8 +88,7 @@ export class ProductList implements OnInit {
       }
 
       const matchesStatus =
-        this.selectedStatus === 'ALL' ||
-        product.status === this.selectedStatus;
+        this.selectedStatus === 'ALL' || product.status === this.selectedStatus;
 
       return (
         matchesSearch &&
@@ -108,6 +101,11 @@ export class ProductList implements OnInit {
     });
   }
 
+  get paginatedProducts(): ProductResponse[] {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.filteredProducts.slice(startIndex, startIndex + this.pageSize);
+  }
+
   loadProducts(): void {
     this.isLoading = true;
     this.errorMessage = '';
@@ -118,11 +116,11 @@ export class ProductList implements OnInit {
       .subscribe({
         next: products => {
           this.products = products;
+          this.currentPage = 1;
           this.isLoading = false;
         },
         error: () => {
-          this.errorMessage =
-            'Unable to load products. Please try again.';
+          this.errorMessage = 'Unable to load products. Please try again.';
           this.isLoading = false;
         },
       });
@@ -130,6 +128,11 @@ export class ProductList implements OnInit {
 
   onCategoryFilterChange(): void {
     this.selectedTypeId = 'ALL';
+    this.currentPage = 1;
+  }
+
+  onFiltersChanged(): void {
+    this.currentPage = 1;
   }
 
   clearFilters(): void {
@@ -139,6 +142,7 @@ export class ProductList implements OnInit {
     this.selectedTrackingMode = 'ALL';
     this.selectedStockFilter = 'ALL';
     this.selectedStatus = 'ALL';
+    this.currentPage = 1;
   }
 
   formatPrice(price: number): string {
