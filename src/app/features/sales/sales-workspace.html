@@ -1,0 +1,49 @@
+<section class="sales-page">
+  <header class="page-heading">
+    <div><p class="eyebrow">EMPLOYEE WORKSPACE</p><h2>Sell products</h2><p>Find an item, confirm its available quantity and record the sale.</p></div>
+    <div class="stock-count"><strong>{{ activeProducts.length }}</strong><span>active products</span></div>
+  </header>
+
+  @if (errorMessage) { <app-feedback-message tone="error" title="Action could not be completed" [message]="errorMessage" /> }
+  @if (successMessage) { <app-feedback-message tone="success" title="Sale recorded" [message]="successMessage" /> }
+
+  <div class="sales-grid">
+    <section class="panel product-panel">
+      <div class="panel-heading"><div><h3>Find a product</h3><p>Search by name, barcode or category.</p></div></div>
+      <label class="search-label" for="product-search">Product search</label>
+      <input id="product-search" class="search-input" type="search" [(ngModel)]="searchTerm" placeholder="Name or scan barcode…" />
+
+      @if (isLoading) { <div class="empty-state">Loading products…</div> }
+      @else if (filteredProducts.length === 0) { <div class="empty-state">No active products match your search.</div> }
+      @else {
+        <div class="product-list">
+          @for (product of filteredProducts; track product.id) {
+            <button type="button" class="product-row" [class.selected]="selectedProductId === product.id" (click)="selectProduct(product)">
+              <span class="product-main"><strong>{{ product.name }}</strong><small>{{ product.barcode }} · {{ product.categoryName }}</small></span>
+              <span class="product-stock"><strong>{{ product.quantity }}</strong><small>in stock</small></span>
+            </button>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="panel sale-panel">
+      <div class="panel-heading"><div><h3>Sale details</h3><p>Stock is reduced only after the sale is accepted.</p></div></div>
+      @if (selectedProduct; as product) {
+        <div class="selected-product"><span class="selected-label">SELECTED PRODUCT</span><h4>{{ product.name }}</h4><p>{{ product.barcode }} · {{ product.categoryName }} / {{ product.typeName }}</p></div>
+        <div class="stock-summary"><div><span>Available now</span><strong>{{ product.quantity }}</strong><small>pieces</small></div><div><span>Product type</span><strong>{{ product.trackingMode === 'WEIGHTED' ? 'Weighted' : 'Piece-based' }}</strong><small>{{ product.weight === null ? 'No recorded weight' : formatWeight(product.weight) + ' per piece' }}</small></div></div>
+        @if (product.quantity > 0) {
+          <form (ngSubmit)="submitSale()">
+            <label for="sale-quantity">Quantity to sell</label>
+            <input id="sale-quantity" name="quantity" type="number" min="1" [max]="product.quantity" step="1" [(ngModel)]="quantity" required />
+            <label for="sale-notes">Note (optional)</label>
+            <textarea id="sale-notes" name="notes" rows="3" maxlength="500" [(ngModel)]="notes" placeholder="Optional sale note"></textarea>
+            <button class="sell-button" type="submit" [disabled]="isSaving || !isSaleQuantityValid">{{ isSaving ? 'Recording sale…' : 'Confirm sale' }}</button>
+          </form>
+        } @else { <div class="empty-state">This product is out of stock and cannot be sold.</div> }
+      } @else {
+        <div class="selection-empty"><span>◇</span><strong>Select a product</strong><p>Choose an item from the list to see its stock and record a sale.</p></div>
+      }
+    </section>
+  </div>
+</section>

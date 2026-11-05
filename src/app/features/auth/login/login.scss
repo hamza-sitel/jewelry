@@ -1,0 +1,17 @@
+ :host { display: block; min-height: 100vh; }
+.login-page { display: grid; min-height: 100vh; place-items: center; padding: 28px 16px; background: radial-gradient(circle at 50% 0%, #29271f 0, #151615 48%, #101110 100%); color: #e9e7e2; }
+.login-card { width: min(100%, 420px); display: grid; gap: 13px; padding: 38px; border: 1px solid #39362d; border-radius: 10px; background: #181a18; box-shadow: 0 24px 70px #0007; }
+.brand-mark { display: grid; width: 48px; height: 48px; place-items: center; border: 1px solid #b79b61; color: #d5bd84; font: 28px Georgia, serif; }
+.eyebrow { margin: 8px 0 0; color: #b79b61; font-size: 10px; letter-spacing: 2px; }
+h1 { margin: 0; font: 500 27px Georgia, serif; }
+.intro { margin: 0 0 8px; color: #9c9c92; font-size: 13px; }
+form { display: grid; gap: 10px; }
+label { margin-top: 8px; color: #c7c2b5; font-size: 12px; }
+input { min-height: 44px; padding: 0 12px; border: 1px solid #3c3d37; border-radius: 5px; outline: none; background: #111311; color: #eee; font: inherit; }
+input:focus { border-color: #b79b61; }
+button { min-height: 46px; margin-top: 14px; border: 1px solid #b79b61; border-radius: 5px; background: #b79b61; color: #171714; font: inherit; font-weight: 700; cursor: pointer; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.prototype-note,.security-note { margin: 4px 0 0; color: #9b9587; font-size: 11px; line-height: 1.6; }
+.prototype-note { padding: 10px; border: 1px solid #49422f; border-radius: 5px; background: #222118; }
+.security-note { color: #77786f; }
+@media(max-width:480px) { .login-card { padding: 26px 20px; } }

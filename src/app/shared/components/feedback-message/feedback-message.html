@@ -1,0 +1,6 @@
+@if (message) {
+  <section class="feedback" [class.success]="tone === 'success'" [class.error]="tone === 'error'" [class.info]="tone === 'info'" [attr.role]="tone === 'error' ? 'alert' : 'status'">
+    @if (title) { <strong>{{ title }}</strong> }
+    <p>{{ message }}</p>
+  </section>
+}

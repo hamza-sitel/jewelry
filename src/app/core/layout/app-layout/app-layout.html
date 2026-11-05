@@ -1,118 +1,42 @@
-
 <div class="app-shell">
   <aside class="sidebar">
-    <a routerLink="/dashboard" class="brand">
+    <a routerLink="/" class="brand">
       <span class="brand-icon">J</span>
-
-      <span class="brand-text">
-        <strong>JEWELRY</strong>
-        <small>INVENTORY SYSTEM</small>
-      </span>
+      <span class="brand-text"><strong>JEWELRY</strong><small>INVENTORY SYSTEM</small></span>
     </a>
 
     <nav class="navigation">
-      <p class="section-label">WORKSPACE</p>
-
-      <a
-        routerLink="/dashboard"
-        routerLinkActive="active"
-        class="nav-link"
-      >
-        <span class="nav-icon">▦</span>
-        Dashboard
-      </a>
-
-      <a
-        routerLink="/products"
-        routerLinkActive="active"
-        class="nav-link"
-      >
-        <span class="nav-icon">◇</span>
-        Products
-      </a>
-
-      <a
-        routerLink="/stock-operation"
-        routerLinkActive="active"
-        class="nav-link"
-      >
-        <span class="nav-icon">⇄</span>
-        Stock operation
-      </a>
-
-      <a
-        routerLink="/stock-history"
-        routerLinkActive="active"
-        class="nav-link"
-      >
-        <span class="nav-icon">◷</span>
-        Stock history
-      </a>
-
-      <a
-        routerLink="/categories"
-        routerLinkActive="active"
-        class="nav-link"
-      >
-        <span class="nav-icon">▤</span>
-        Categories
-      </a>
-
-      <a
-        routerLink="/barcode"
-        routerLinkActive="active"
-        class="nav-link"
-      >
-        <span class="nav-icon">▥</span>
-        Barcode scanner
-      </a>
-
-      <p class="section-label management-label">MANAGEMENT</p>
-
-      <a
-        routerLink="/reports"
-        routerLinkActive="active"
-        class="nav-link"
-      >
-        <span class="nav-icon">▥</span>
-        Reports
-      </a>
-
-      <a
-        routerLink="/settings"
-        routerLinkActive="active"
-        class="nav-link"
-      >
-        <span class="nav-icon">⚙</span>
-        Settings
-      </a>
+      @if (isAdmin) {
+        <p class="section-label">WORKSPACE</p>
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-link"><span class="nav-icon">▦</span>Dashboard</a>
+        <a routerLink="/products" routerLinkActive="active" class="nav-link"><span class="nav-icon">◇</span>Products</a>
+        <a routerLink="/stock-operation" routerLinkActive="active" class="nav-link"><span class="nav-icon">⇄</span>Stock operation</a>
+        <a routerLink="/stock-history" routerLinkActive="active" class="nav-link"><span class="nav-icon">◷</span>Stock history</a>
+        <a routerLink="/categories" routerLinkActive="active" class="nav-link"><span class="nav-icon">▤</span>Categories</a>
+        <a routerLink="/barcode" routerLinkActive="active" class="nav-link"><span class="nav-icon">▥</span>Barcode scanner</a>
+        <p class="section-label management-label">MANAGEMENT</p>
+        <a routerLink="/reports" routerLinkActive="active" class="nav-link"><span class="nav-icon">▥</span>Reports</a>
+        <a routerLink="/settings" routerLinkActive="active" class="nav-link"><span class="nav-icon">⚙</span>Settings & team</a>
+        <p class="section-label management-label">SALES</p>
+        <a routerLink="/sales" routerLinkActive="active" class="nav-link"><span class="nav-icon">＋</span>Sales workspace</a>
+      } @else {
+        <p class="section-label">EMPLOYEE</p>
+        <a routerLink="/sales" routerLinkActive="active" class="nav-link"><span class="nav-icon">＋</span>Sales workspace</a>
+      }
     </nav>
 
-    <footer class="sidebar-footer">
-      <span class="status-dot"></span>
-      Inventory workspace
-    </footer>
+    <footer class="sidebar-footer"><span class="status-dot"></span>{{ isAdmin ? 'Administrator workspace' : 'Employee workspace' }}</footer>
   </aside>
 
   <main class="main-area">
     <header class="topbar">
-      <div>
-        <span class="breadcrumb">Jewelry / Management</span>
-        <h1>Inventory Management</h1>
-      </div>
-
+      <div><span class="breadcrumb">Jewelry / {{ isAdmin ? 'Management' : 'Sales' }}</span><h1>{{ isAdmin ? 'Inventory Management' : 'Sales workspace' }}</h1></div>
       <div class="profile">
-        <span class="profile-avatar">A</span>
-
-        <div class="profile-info">
-          <strong>Administrator</strong>
-          <small>Shop manager</small>
-        </div>
+        <span class="profile-avatar">{{ currentUser?.displayName?.charAt(0)?.toLocaleUpperCase() || 'U' }}</span>
+        <div class="profile-info"><strong>{{ currentUser?.displayName }}</strong><small>{{ currentUser?.role === 'ADMIN' ? 'Administrator' : 'Employee' }}</small></div>
+        <button type="button" class="logout-button" (click)="logout()">Sign out</button>
       </div>
     </header>
-
-    <section class="page-content">
-      <router-outlet />
-    </section>
+    <section class="page-content"><router-outlet /></section>
   </main>
 </div>

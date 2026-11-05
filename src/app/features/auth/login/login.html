@@ -1,0 +1,27 @@
+<main class="login-page">
+  <section class="login-card">
+    <div class="brand-mark">J</div>
+    <p class="eyebrow">JEWELRY INVENTORY SYSTEM</p>
+    <h1>Welcome back</h1>
+    <p class="intro">Sign in to continue to your store workspace.</p>
+
+    @if (errorMessage) {
+      <app-feedback-message tone="error" title="Sign-in failed" [message]="errorMessage" />
+    }
+
+    <form (ngSubmit)="submit()">
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" [(ngModel)]="username" autocomplete="username" required maxlength="30" />
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" [(ngModel)]="password" autocomplete="current-password" required />
+
+      <button type="submit" [disabled]="isSubmitting || !username.trim() || !password">
+        {{ isSubmitting ? 'Signing in…' : 'Sign in' }}
+      </button>
+    </form>
+
+    <p class="prototype-note">Prototype administrator: <strong>admin</strong> / <strong>Admin@123</strong>. Change this password after your first sign-in.</p>
+    <p class="security-note">Prototype sign-in only. Production authentication and permissions must be enforced by the backend.</p>
+  </section>
+</main>

@@ -1,0 +1,7 @@
+ :host { display: block; }
+.feedback { padding: 12px 14px; border: 1px solid #3c4038; border-radius: 7px; background: #20231e; color: #d9d6ca; }
+.feedback strong { display: block; margin-bottom: 4px; font-size: 12px; }
+.feedback p { margin: 0; font-size: 12px; line-height: 1.55; }
+.feedback.success { border-color: #46644a; background: #1d2a20; color: #c4dfc5; }
+.feedback.error { border-color: #754b42; background: #30211f; color: #f0c4b9; }
+.feedback.info { border-color: #514a37; background: #29271f; color: #decda0; }
