@@ -3,16 +3,10 @@
     <div>
       <span class="eyebrow">WARM ATELIER / BOUTIQUE OVERVIEW</span>
       <h1>Good day. <em>Your atelier.</em></h1>
-      <p>A clear overview of your jewelry stock and recorded valuations.</p>
+      <p>A visual overview of your jewelry collection and recorded stock activity.</p>
     </div>
-
-    <button
-      type="button"
-      class="refresh-button"
-      (click)="loadDashboard()"
-      [disabled]="isLoading"
-    >
-      ↻ Refresh data
+    <button type="button" class="refresh-button" (click)="loadDashboard()" [disabled]="isLoading">
+      <span aria-hidden="true">↻</span> Refresh data
     </button>
   </header>
 
@@ -21,138 +15,87 @@
   } @else if (errorMessage) {
     <div class="dashboard-state dashboard-error">
       <p>{{ errorMessage }}</p>
-      <button type="button" class="refresh-button" (click)="loadDashboard()">
-        Try again
-      </button>
+      <button type="button" class="refresh-button" (click)="loadDashboard()">Try again</button>
     </div>
   } @else {
     <section class="welcome-strip">
-      <div class="welcome-mark">✳</div>
+      <div class="welcome-mark" aria-hidden="true">✳</div>
       <div>
         <strong>Every piece tells a story.</strong>
-        <p>Your current inventory figures, collected in one place.</p>
+        <p>Current stock, valuation and movement patterns in one place.</p>
       </div>
-      <span class="live-label"><span></span> MOCK DATA</span>
+      <span class="live-label"><span></span> LOCAL DATA</span>
     </section>
 
-  
-<section class="dashboard-metrics">
-  <article class="metric-card">
-    <span class="metric-topline">PRODUCT RECORDS <span>01</span></span>
-    <strong>{{ totalProducts }}</strong>
-    <p>All active and archived product records</p>
-    <div class="metric-bottom">
-      <span class="metric-line"></span>
-    </div>
-  </article>
+    <section class="dashboard-metrics" aria-label="Inventory key figures">
+      <article class="metric-card metric-card-primary">
+        <span class="metric-topline">ACTIVE PRODUCTS <span>01</span></span>
+        <strong>{{ activeProductsCount }}</strong>
+        <p>Product records available for stock operations</p>
+      </article>
+      <article class="metric-card">
+        <span class="metric-topline">TOTAL ACTIVE PIECES <span>02</span></span>
+        <strong>{{ totalUnits }}</strong>
+        <p>Pieces across active product records</p>
+      </article>
+      <article class="metric-card">
+        <span class="metric-topline">PURCHASE VALUE <span>03</span></span>
+        <strong class="metric-money">{{ formatPrice(inventoryPurchaseValue) }}</strong>
+        <p>Estimated cost value of current stock</p>
+      </article>
+      <article class="metric-card">
+        <span class="metric-topline">POTENTIAL SALES VALUE <span>04</span></span>
+        <strong class="metric-money">{{ formatPrice(inventorySaleValue) }}</strong>
+        <p>Value at listed sale prices, not realized revenue</p>
+      </article>
+      <article class="metric-card">
+        <span class="metric-topline">POTENTIAL MARGIN <span>05</span></span>
+        <strong class="metric-money">{{ formatPrice(expectedGrossMargin) }}</strong>
+        <p>Potential margin on stock currently held</p>
+      </article>
+      <article class="metric-card metric-card-warning">
+        <span class="metric-topline">LOW STOCK <span>06</span></span>
+        <strong>{{ lowStockCount }}</strong>
+        <p>Active product records with 1–3 pieces</p>
+      </article>
+      <article class="metric-card metric-card-danger">
+        <span class="metric-topline">OUT OF STOCK <span>07</span></span>
+        <strong>{{ outOfStockCount }}</strong>
+        <p>Active product records with zero pieces</p>
+      </article>
+      <article class="metric-card">
+        <span class="metric-topline">RECORDED WEIGHT <span>08</span></span>
+        <strong class="metric-money">{{ formatWeight(recordedTotalWeight) }}</strong>
+        <p>Per-piece weight multiplied by current quantity</p>
+      </article>
+    </section>
 
-  <article class="metric-card">
-    <span class="metric-topline">ACTIVE PRODUCTS <span>02</span></span>
-    <strong>{{ activeProductsCount }}</strong>
-    <p>Products available for stock operations</p>
-    <div class="metric-bottom">
-      <span class="metric-line green-line"></span>
-    </div>
-  </article>
-
-  <article class="metric-card">
-    <span class="metric-topline">ARCHIVED PRODUCTS <span>03</span></span>
-    <strong>{{ archivedProductsCount }}</strong>
-    <p>Archived records retained in the system</p>
-    <div class="metric-bottom">
-      <span class="metric-line terracotta-line"></span>
-    </div>
-  </article>
-
-  <article class="metric-card">
-    <span class="metric-topline">TOTAL ACTIVE PIECES <span>04</span></span>
-    <strong>{{ totalUnits }}</strong>
-    <p>Pieces belonging to active products</p>
-    <div class="metric-bottom">
-      <span class="metric-line gold-line"></span>
-    </div>
-  </article>
-
-  <article class="metric-card">
-    <span class="metric-topline">PURCHASE VALUE <span>05</span></span>
-    <strong class="metric-money">{{ formatPrice(inventoryPurchaseValue) }}</strong>
-    <p>Estimated purchase value of active stock</p>
-    <div class="metric-bottom">
-      <span class="metric-line"></span>
-    </div>
-  </article>
-
-  <article class="metric-card">
-    <span class="metric-topline">POTENTIAL SALES VALUE <span>06</span></span>
-    <strong class="metric-money">{{ formatPrice(inventorySaleValue) }}</strong>
-    <p>Estimated value at listed sale prices</p>
-    <div class="metric-bottom">
-      <span class="metric-line green-line"></span>
-    </div>
-  </article>
-
-  <article class="metric-card">
-    <span class="metric-topline">EXPECTED GROSS PROFIT <span>07</span></span>
-    <strong class="metric-money">{{ formatPrice(expectedGrossProfit) }}</strong>
-    <p>Potential margin on the current active stock</p>
-    <div class="metric-bottom">
-      <span class="metric-line gold-line"></span>
-    </div>
-  </article>
-
-  <article class="metric-card">
-    <span class="metric-topline">LOW STOCK <span>08</span></span>
-    <strong>{{ lowStockCount }}</strong>
-    <p>Active product records with 1–3 pieces</p>
-    <div class="metric-bottom">
-      <span class="metric-line terracotta-line"></span>
-    </div>
-  </article>
-
-  <article class="metric-card">
-    <span class="metric-topline">OUT OF STOCK <span>09</span></span>
-    <strong>{{ outOfStockCount }}</strong>
-    <p>Active product records with zero pieces</p>
-    <div class="metric-bottom">
-      <span class="metric-line terracotta-line"></span>
-    </div>
-  </article>
-</section>
-
-
-    <section class="charts-grid">
-      <article class="chart-card category-card">
+    <section class="charts-grid charts-grid-top">
+      <article class="chart-card chart-card-donut">
         <div class="chart-heading">
           <div>
             <span class="eyebrow">STOCK COMPOSITION</span>
             <h2>Collection by category</h2>
-            <p>How the recorded pieces are distributed.</p>
+            <p>Share of active pieces in each category.</p>
           </div>
-          <span class="chart-tag">01 / PIE</span>
+          <span class="chart-tag">01 / DONUT</span>
         </div>
-
         @if (totalUnits === 0) {
-          <div class="chart-empty">No stock data to display yet.</div>
+          <div class="chart-empty">No active stock to display yet.</div>
         } @else {
-          <div class="pie-layout">
-            <div
-              class="pie-chart"
-              role="img"
-              [style.background]="categoryChartBackground"
-              aria-label="Circular chart showing the stock distribution by category"
-            >
-              <div class="pie-hole">
+          <div class="donut-layout">
+            <div class="donut-chart" role="img" [style.background]="categoryChartBackground" aria-label="Doughnut chart of active pieces by category">
+              <div class="donut-hole">
                 <span>TOTAL PIECES</span>
                 <strong>{{ totalUnits }}</strong>
               </div>
             </div>
-
             <div class="chart-legend">
               @for (metric of categoryMetrics; track metric.name) {
                 <div class="legend-item">
                   <span class="legend-dot" [style.background]="metric.color"></span>
                   <span class="legend-name">{{ metric.name }}</span>
-                  <strong>{{ metric.percentage | number: '1.0-1' }}%</strong>
+                  <strong>{{ metric.percentage.toFixed(1) }}%</strong>
                 </div>
               }
             </div>
@@ -160,97 +103,164 @@
         }
       </article>
 
-      <article class="chart-card bar-card">
+      <article class="chart-card">
         <div class="chart-heading">
           <div>
             <span class="eyebrow">CATEGORY COMPARISON</span>
             <h2>Pieces by category</h2>
-            <p>Compare stock volumes at a glance.</p>
+            <p>Compare the number of active pieces.</p>
           </div>
           <span class="chart-tag">02 / BAR</span>
         </div>
-
         @if (categoryMetrics.length === 0) {
-          <div class="chart-empty">No active stock to display yet.</div>
+          <div class="chart-empty">No category quantities to compare.</div>
         } @else {
-          <div class="bar-chart">
+          <div class="horizontal-bars">
             @for (metric of categoryMetrics; track metric.name) {
               <div class="bar-row">
-                <div class="bar-label">
-                  <span>{{ metric.name }}</span>
-                  <strong>{{ metric.count }}</strong>
-                </div>
-                <div class="bar-track">
-                  <div
-                    class="bar-fill"
-                    [style.width.%]="(metric.count / highestCategoryCount) * 100"
-                    [style.background]="metric.color"
-                  ></div>
-                </div>
+                <div class="bar-label"><span>{{ metric.name }}</span><strong>{{ metric.count }}</strong></div>
+                <div class="bar-track"><span class="bar-fill" [style.width.%]="(metric.count / highestCategoryCount) * 100" [style.background]="metric.color"></span></div>
               </div>
             }
           </div>
-          <div class="bar-axis">
-            <span>0 pieces</span>
-            <span>Maximum: {{ highestCategoryCount }}</span>
+          <div class="chart-footnote">Values represent pieces, not product records.</div>
+        }
+      </article>
+    </section>
+
+    <section class="chart-card movement-card">
+      <div class="chart-heading movement-heading">
+        <div>
+          <span class="eyebrow">LAST SEVEN DAYS</span>
+          <h2>Stock movement rhythm</h2>
+          <p>Daily pieces purchased and sold, based on saved operation timestamps.</p>
+        </div>
+        <div class="chart-legend-inline">
+          <span><i class="legend-line legend-line-purchase"></i> Purchases</span>
+          <span><i class="legend-line legend-line-sale"></i> Sales</span>
+        </div>
+      </div>
+      @if (!hasWeeklyMovement) {
+        <div class="chart-empty">No stock movements were recorded in the last seven days.</div>
+      } @else {
+        <div class="line-chart-wrap">
+          <svg class="movement-svg" viewBox="0 0 640 260" role="img" aria-label="Curved line chart comparing daily purchases and sales over the last seven days">
+            <defs>
+              <linearGradient id="sale-area-gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#bd806b" stop-opacity="0.24" />
+                <stop offset="100%" stop-color="#bd806b" stop-opacity="0.015" />
+              </linearGradient>
+            </defs>
+            @for (tick of [0, 1, 2, 3]; track tick) {
+              <line class="chart-grid-line" x1="48" [attr.y1]="30 + tick * 62.6" x2="608" [attr.y2]="30 + tick * 62.6" />
+            }
+            <path class="sale-area" [attr.d]="saleAreaPath"></path>
+            <path class="movement-line purchase-line" [attr.d]="purchaseLinePath"></path>
+            <path class="movement-line sale-line" [attr.d]="saleLinePath"></path>
+            @for (point of purchasePoints; track point.label) {
+              <circle class="movement-point purchase-point" [attr.cx]="point.x" [attr.cy]="point.y" r="4"><title>{{ point.label }} purchases: {{ point.value }}</title></circle>
+            }
+            @for (point of salePoints; track point.label) {
+              <circle class="movement-point sale-point" [attr.cx]="point.x" [attr.cy]="point.y" r="4"><title>{{ point.label }} sales: {{ point.value }}</title></circle>
+            }
+            @for (day of weeklyMovement; track day.key; let index = $index) {
+              <text class="chart-axis-label" [attr.x]="48 + index * (560 / 6)" y="246" text-anchor="middle">{{ day.label }}</text>
+            }
+          </svg>
+        </div>
+      }
+    </section>
+
+    <section class="charts-grid charts-grid-bottom">
+      <article class="chart-card">
+        <div class="chart-heading">
+          <div>
+            <span class="eyebrow">MOVEMENT MIX</span>
+            <h2>Pieces moved by operation</h2>
+            <p>All recorded operation quantities, grouped by type.</p>
+          </div>
+          <span class="chart-tag">04 / STACKED</span>
+        </div>
+        @if (!hasOperationMix) {
+          <div class="chart-empty">No stock operations recorded yet.</div>
+        } @else {
+          <div class="stacked-bar" role="img" aria-label="Stacked bar comparing all stock operation quantities">
+            @for (item of operationMix; track item.type) {
+              @if (item.percentage > 0) {
+                <span [style.width.%]="item.percentage" [style.background]="item.color" [attr.title]="item.label + ': ' + item.quantity"></span>
+              }
+            }
+          </div>
+          <div class="stacked-legend">
+            @for (item of operationMix; track item.type) {
+              <div class="stacked-legend-item">
+                <span class="legend-dot" [style.background]="item.color"></span>
+                <span>{{ item.label }}</span>
+                <strong>{{ item.quantity }}</strong>
+              </div>
+            }
+          </div>
+        }
+      </article>
+
+      <article class="chart-card stock-health-card">
+        <div class="chart-heading">
+          <div>
+            <span class="eyebrow">STOCK HEALTH</span>
+            <h2>Items needing attention</h2>
+            <p>Active product records that may need replenishment.</p>
+          </div>
+          <span class="chart-tag">05 / STATUS</span>
+        </div>
+        <div class="health-stat"><span class="health-dot health-dot-warning"></span><span>Low stock</span><strong>{{ lowStockCount }}</strong></div>
+        <div class="health-stat"><span class="health-dot health-dot-danger"></span><span>Out of stock</span><strong>{{ outOfStockCount }}</strong></div>
+        <div class="health-stat"><span class="health-dot health-dot-muted"></span><span>Archived records</span><strong>{{ archivedProductsCount }}</strong></div>
+        <a class="text-link" routerLink="/products">Review product inventory <span aria-hidden="true">→</span></a>
+      </article>
+    </section>
+
+    <section class="recent-grid">
+      <article class="recent-card">
+        <div class="recent-heading">
+          <div><span class="eyebrow">LATEST ACTIVITY</span><h2>Recent stock operations</h2></div>
+          <a class="text-link" routerLink="/stock-history">Full history →</a>
+        </div>
+        @if (recentOperations.length === 0) {
+          <div class="chart-empty">Stock movements will appear here.</div>
+        } @else {
+          <div class="recent-list">
+            @for (operation of recentOperations; track operation.id) {
+              <div class="recent-operation">
+                <span class="operation-mark" [class.operation-mark-out]="operation.type === 'SALE' || operation.type === 'MANUAL_REMOVE'">{{ operation.type === 'SALE' || operation.type === 'MANUAL_REMOVE' ? '−' : '+' }}</span>
+                <div class="recent-operation-copy"><strong>{{ operation.productName }}</strong><small>{{ getOperationLabel(operation.type) }} · {{ operation.barcode }}</small></div>
+                <strong class="recent-quantity">{{ operation.quantity }}</strong>
+              </div>
+            }
+          </div>
+        }
+      </article>
+
+      <article class="recent-card">
+        <div class="recent-heading">
+          <div><span class="eyebrow">COLLECTION REGISTER</span><h2>Recently added products</h2></div>
+          <a class="text-link" routerLink="/products">All products →</a>
+        </div>
+        @if (recentProducts.length === 0) {
+          <div class="chart-empty">No active products available yet.</div>
+        } @else {
+          <div class="recent-list">
+            @for (product of recentProducts; track product.id) {
+              <div class="recent-product-row">
+                <span class="product-initial">{{ product.name.charAt(0).toUpperCase() }}</span>
+                <div class="recent-operation-copy"><strong>{{ product.name }}</strong><small>{{ product.categoryName }} · {{ product.typeName }}</small></div>
+                <span class="recent-quantity">{{ product.quantity }} pcs</span>
+              </div>
+            }
           </div>
         }
       </article>
     </section>
 
-    <section class="weight-summary">
-      <div class="weight-symbol">◇</div>
-      <div class="weight-copy">
-        <span class="eyebrow">RECORDED WEIGHT</span>
-        <h2>{{ formatWeight(recordedTotalWeight) }}</h2>
-        <p>Calculated from quantities and unit weights that have been recorded.</p>
-      </div>
-      <span class="weight-note">Unrecorded weights are excluded</span>
-    </section>
-
-    <section class="recent-card">
-      <div class="recent-heading">
-        <div>
-          <span class="eyebrow">COLLECTION REGISTER</span>
-          <h2>Recently added demo records</h2>
-        </div>
-        <span class="demo-tag">DEMO DATA</span>
-      </div>
-
-      <div class="recent-table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Category / type</th>
-              <th>Quantity</th>
-              <th>Weight per piece</th>
-              <th>Sale price</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (product of activeProducts.slice().reverse().slice(0, 5); track product.id) {
-              <tr>
-                <td>
-                  <div class="recent-product">
-                    <span>{{ product.name.charAt(0).toUpperCase() }}</span>
-                    <strong>{{ product.name }}</strong>
-                  </div>
-                </td>
-                <td>
-                  <span class="recent-category">{{ product.categoryName }}</span>
-                  <small>{{ product.typeName }}</small>
-                </td>
-                <td>{{ product.quantity }}</td>
-                <td>
-                  {{ product.weight === null ? 'Not recorded' : formatWeight(product.weight) }}
-                </td>
-                <td class="recent-price">{{ formatPrice(product.salePrice) }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <p class="dashboard-disclaimer">Inventory values are estimates based on current product prices and quantities. Potential margin is not realized sales profit.</p>
   }
 </div>

@@ -1,16 +1,29 @@
-# Phase 3 — Inventory, Stock History, DTOs and Barcode
+# Phase 4 — Dashboard and Reports
 
-This ZIP is an overlay for the existing Angular project. It contains a `src` folder at the archive root. Extract it into the repository root with PowerShell `Expand-Archive -Force`.
+This is an overlay for the existing Jewelry Stock Management Angular project. Extract it into the repository root with PowerShell `Expand-Archive -Force`.
 
-Read `PHASE-3-IMPLEMENTATION-GUIDE.md` before applying. It explains the DTO design, data flow, local mock behavior, future Spring Boot contract, tests and manual verification.
+## Included
 
-Included work:
-- CreateStockOperationRequest DTO and StockOperationResponse model.
-- One stock-operation command contract through an InjectionToken.
-- Mock command flow that updates stock, records history and attempts rollback if history storage fails.
-- Request validation and 500-character notes limit.
-- Stock History search, type/date filters, sorting, product links and 20-row pagination.
-- Barcode scanner now uses the same request DTO and prevents duplicate submissions.
-- Unit tests for service validation, mock execution/rollback and stock-history filters.
+- Dashboard uses existing `ProductResponse` and `StockOperationResponse` data.
+- Inventory KPI calculations for active pieces, current inventory values, recorded weight, low stock and out-of-stock records.
+- Category doughnut chart, category quantity bars, smooth seven-day purchase/sale curves, and a stacked operation-mix bar.
+- Recent products and stock operations.
+- Reports redesign with stock and operation summaries, category composition, purchase-value comparison, and movement mix.
+- Search, category/status/type/date filters, sorting and shared 20-row pagination.
+- CSV and Excel exports include every filtered record, not just the visible page.
+- Dashboard and Reports component tests.
 
-This does not change the product tracking rules: PIECE and WEIGHTED both allow multiple whole-piece quantities. Stock operations remain in pieces, not grams.
+## Important data rules
+
+- Low stock is 1–3 pieces (the store's chosen threshold).
+- Both `PIECE` and `WEIGHTED` products are counted in whole pieces.
+- Weighted total is per-piece weight × current quantity.
+- Inventory purchase/sale values are estimates from current product prices and quantity.
+- Potential gross margin on current stock is not realized profit from completed sales.
+- The movement line chart shows purchases and sales for the last seven calendar days. If there are no movements in that period, the UI shows an empty state rather than inventing a trend.
+
+## No new dependency
+
+Charts use native SVG and CSS. Reports continue using the existing `ReportExportService` and existing `xlsx` dependency. The existing shared `Pagination` component is reused.
+
+Read `PHASE-4-IMPLEMENTATION-GUIDE.md` before applying and testing the overlay.
