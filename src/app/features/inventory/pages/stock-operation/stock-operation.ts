@@ -6,6 +6,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ProductService } from '../../../products/product.service';
 import type { ProductResponse } from '../../../products/product.model';
 import { StockOperationService } from '../../services/stock-operation.service';
+import type { CreateStockOperationRequest } from '../../stock-operation.dto';
 import type { StockOperationType } from '../../stock-operation.model';
 import { ProductTrackingModeLabelPipe } from '../../../../shared/pipes/product-tracking-mode.pipe';
 
@@ -89,23 +90,22 @@ export class StockOperation implements OnInit {
       return;
     }
 
-    if (!Number.isSafeInteger(this.quantity) || this.quantity <= 0) {
-      this.errorMessage = 'Enter a valid positive whole number.';
-      return;
-    }
+    const request: CreateStockOperationRequest = {
+      productId: product.id,
+      type: this.operationType,
+      quantity: this.quantity,
+      notes: this.notes.trim() || null,
+    };
 
     this.isLoading = true;
+
     this.stockOperationService
-      .createOperation(
-        product.id,
-        this.operationType,
-        this.quantity,
-        this.notes.trim() || null,
-      )
+      .createOperation(request)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: operation => {
-          this.successMessage = `Operation saved successfully. New stock: ${operation.newStock}.`;
+          this.successMessage =
+            `Operation saved successfully. New stock: ${operation.newStock} piece(s).`;
           this.quantity = 1;
           this.notes = '';
           this.loadProducts(String(product.id));

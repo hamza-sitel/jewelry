@@ -14,18 +14,75 @@
         <h2>All operations</h2>
         <p>{{ filteredOperations.length }} recorded operations</p>
       </div>
-      <select
-        aria-label="Filter operations"
-        [(ngModel)]="selectedFilter"
-        (ngModelChange)="onFilterChange()"
-      >
-        <option value="ALL">All operations</option>
-        <option value="PURCHASE">Purchases</option>
-        <option value="SALE">Sales</option>
-        <option value="MANUAL_ADD">Manual additions</option>
-        <option value="MANUAL_REMOVE">Manual removals</option>
-      </select>
     </div>
+
+    <div class="history-filters">
+      <label class="history-filter-field history-search-field">
+        <span>Search</span>
+        <input
+          type="search"
+          name="searchTerm"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="onFiltersChange()"
+          placeholder="Product, barcode, notes or product ID"
+        />
+      </label>
+
+      <label class="history-filter-field">
+        <span>Operation type</span>
+        <select
+          name="selectedFilter"
+          [(ngModel)]="selectedFilter"
+          (ngModelChange)="onFiltersChange()"
+        >
+          <option value="ALL">All operations</option>
+          <option value="PURCHASE">Purchases</option>
+          <option value="SALE">Sales</option>
+          <option value="MANUAL_ADD">Manual additions</option>
+          <option value="MANUAL_REMOVE">Manual removals</option>
+        </select>
+      </label>
+
+      <label class="history-filter-field">
+        <span>From date</span>
+        <input
+          type="date"
+          name="dateFrom"
+          [(ngModel)]="dateFrom"
+          (ngModelChange)="onFiltersChange()"
+        />
+      </label>
+
+      <label class="history-filter-field">
+        <span>To date</span>
+        <input
+          type="date"
+          name="dateTo"
+          [(ngModel)]="dateTo"
+          (ngModelChange)="onFiltersChange()"
+        />
+      </label>
+
+      <label class="history-filter-field">
+        <span>Sort date</span>
+        <select
+          name="sortOrder"
+          [(ngModel)]="sortOrder"
+          (ngModelChange)="onFiltersChange()"
+        >
+          <option value="NEWEST">Newest first</option>
+          <option value="OLDEST">Oldest first</option>
+        </select>
+      </label>
+
+      <button type="button" class="clear-filters-button" (click)="clearFilters()">
+        Clear filters
+      </button>
+    </div>
+
+    @if (dateRangeErrorMessage) {
+      <p class="filter-error" role="alert">{{ dateRangeErrorMessage }}</p>
+    }
 
     @if (isLoading) {
       <div class="empty-state">Loading stock history...</div>
@@ -34,7 +91,7 @@
     } @else if (filteredOperations.length === 0) {
       <div class="empty-state">
         <h3>No operations found</h3>
-        <p>Stock movements will appear here after you record them.</p>
+        <p>Record a stock movement or change your filters to see results.</p>
       </div>
     } @else {
       <div class="table-wrapper">
@@ -55,7 +112,11 @@
             @for (operation of paginatedOperations; track operation.id) {
               <tr>
                 <td>{{ formatDate(operation.createdAt) }}</td>
-                <td class="product-name">{{ operation.productName }}</td>
+                <td class="product-name">
+                  <a [routerLink]="['/products', operation.productId]">
+                    {{ operation.productName }}
+                  </a>
+                </td>
                 <td class="barcode">{{ operation.barcode }}</td>
                 <td>
                   <span
@@ -77,6 +138,7 @@
           </tbody>
         </table>
       </div>
+
       <app-pagination
         [totalItems]="filteredOperations.length"
         [pageSize]="pageSize"

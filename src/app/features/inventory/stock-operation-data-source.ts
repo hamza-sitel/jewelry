@@ -1,20 +1,22 @@
-
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import type { StockOperation } from './stock-operation.model';
+import type { CreateStockOperationRequest } from './stock-operation.dto';
+import type { StockOperationResponse } from './stock-operation.model';
 
+/**
+ * Application boundary for stock operations.
+ * `create` represents one stock-operation command/endpoint. The mock performs
+ * the local product + history changes; a future API source will POST one request
+ * to Spring Boot, where the database transaction will be authoritative.
+ */
 export interface StockOperationDataSource {
-  getAll(): Observable<StockOperation[]>;
+  getAll(): Observable<StockOperationResponse[]>;
 
-  getByProduct(productId: number): Observable<StockOperation[]>;
+  getByProduct(productId: number): Observable<StockOperationResponse[]>;
 
-  create(
-    operation: Omit<StockOperation, 'id'>,
-  ): Observable<StockOperation>;
+  create(request: CreateStockOperationRequest): Observable<StockOperationResponse>;
 }
 
 export const STOCK_OPERATION_DATA_SOURCE =
-  new InjectionToken<StockOperationDataSource>(
-    'STOCK_OPERATION_DATA_SOURCE',
-  );
+  new InjectionToken<StockOperationDataSource>('STOCK_OPERATION_DATA_SOURCE');

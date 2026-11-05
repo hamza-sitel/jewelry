@@ -48,13 +48,13 @@
           autocomplete="off"
           autocapitalize="characters"
           spellcheck="false"
-          [disabled]="isSearching"
+          [disabled]="isSearching || isSaving"
           required
         />
         <button
           type="submit"
           class="primary-button"
-          [disabled]="isSearching || !barcodeValue.trim()"
+          [disabled]="isSearching || isSaving || !barcodeValue.trim()"
         >
           {{ isSearching ? 'Searching...' : 'Find product' }}
         </button>
@@ -185,6 +185,7 @@
               id="scan-operation-notes"
               name="scanOperationNotes"
               rows="3"
+              maxlength="500"
               [(ngModel)]="operationNotes"
               [disabled]="isSaving || isScannedProductArchived"
               placeholder="Add a note about this operation..."

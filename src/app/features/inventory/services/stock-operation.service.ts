@@ -1,103 +1,86 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, switchMap, throwError } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 
-import { ProductService } from '../../products/product.service';
-import type { ProductResponse } from '../../products/product.model';
+import type { CreateStockOperationRequest } from '../stock-operation.dto';
 import { STOCK_OPERATION_DATA_SOURCE } from '../stock-operation-data-source';
 import type { StockOperationDataSource } from '../stock-operation-data-source';
-import type {
-  StockOperation,
-  StockOperationType,
-} from '../stock-operation.model';
+import type { StockOperationResponse } from '../stock-operation.model';
+
+const VALID_OPERATION_TYPES = [
+  'PURCHASE',
+  'SALE',
+  'MANUAL_ADD',
+  'MANUAL_REMOVE',
+] as const;
 
 @Injectable({ providedIn: 'root' })
 export class StockOperationService {
-  private readonly productService = inject(ProductService);
   private readonly dataSource: StockOperationDataSource = inject(
     STOCK_OPERATION_DATA_SOURCE,
   );
 
-  getOperations(): Observable<StockOperation[]> {
+  getOperations(): Observable<StockOperationResponse[]> {
     return this.dataSource.getAll();
   }
 
-  getOperationsByProduct(productId: number): Observable<StockOperation[]> {
+  getOperationsByProduct(
+    productId: number,
+  ): Observable<StockOperationResponse[]> {
+    if (!Number.isSafeInteger(productId) || productId <= 0) {
+      return throwError(() => new Error('A valid product ID is required.'));
+    }
+
     return this.dataSource.getByProduct(productId);
   }
 
+  /**
+   * Validates the shape of the command, then delegates the operation.
+   * The mock/API data source is responsible for checking current product stock.
+   */
   createOperation(
-    productId: number,
-    type: StockOperationType,
-    quantity: number,
-    notes: string | null = null,
-  ): Observable<StockOperation> {
-    if (!Number.isSafeInteger(quantity) || quantity <= 0) {
-      return throwError(
-        () => new Error('Quantity must be a positive whole number.'),
-      );
+    request: CreateStockOperationRequest,
+  ): Observable<StockOperationResponse> {
+    const validationError = this.validateRequest(request);
+
+    if (validationError) {
+      return throwError(() => new Error(validationError));
     }
 
-    return this.productService.getProductById(productId).pipe(
-      switchMap(product => {
-        if (!product) {
-          return throwError(() => new Error('Product not found.'));
-        }
+    const normalizedRequest: CreateStockOperationRequest = {
+      ...request,
+      notes: request.notes?.trim() || null,
+    };
 
-        if (product.status === 'ARCHIVED') {
-          return throwError(
-            () =>
-              new Error(
-                'This product is archived. Restore it before performing stock operations.',
-              ),
-          );
-        }
-
-        const newStock = this.calculateNewStock(product, type, quantity);
-
-        if (newStock < 0) {
-          return throwError(
-            () => new Error('Insufficient stock for this operation.'),
-          );
-        }
-
-        return this.productService.updateStockQuantity(productId, newStock).pipe(
-          switchMap(updatedProduct => {
-            if (!updatedProduct) {
-              return throwError(() => new Error('Unable to update product stock.'));
-            }
-
-            // The mock implementation persists this after the stock write.
-            // Phase 3 moves both writes into one Spring Boot database transaction.
-            return this.dataSource.create({
-              productId: product.id,
-              productName: product.name,
-              barcode: product.barcode,
-              type,
-              quantity,
-              previousStock: product.quantity,
-              newStock: updatedProduct.quantity,
-              createdAt: new Date().toISOString(),
-              notes,
-            });
-          }),
-        );
-      }),
-    );
+    return this.dataSource.create(normalizedRequest);
   }
 
-  private calculateNewStock(
-    product: ProductResponse,
-    type: StockOperationType,
-    quantity: number,
-  ): number {
-    switch (type) {
-      case 'PURCHASE':
-      case 'MANUAL_ADD':
-        return product.quantity + quantity;
-
-      case 'SALE':
-      case 'MANUAL_REMOVE':
-        return product.quantity - quantity;
+  private validateRequest(
+    request: CreateStockOperationRequest,
+  ): string | null {
+    if (!request || typeof request !== 'object') {
+      return 'A stock operation request is required.';
     }
+
+    if (!Number.isSafeInteger(request.productId) || request.productId <= 0) {
+      return 'Select a valid product.';
+    }
+
+    if (!VALID_OPERATION_TYPES.includes(request.type)) {
+      return 'Select a valid stock operation type.';
+    }
+
+    if (!Number.isSafeInteger(request.quantity) || request.quantity <= 0) {
+      return 'Quantity must be a positive whole number.';
+    }
+
+    if (request.notes !== null && typeof request.notes !== 'string') {
+      return 'Notes must be text or empty.';
+    }
+
+    if (typeof request.notes === 'string' && request.notes.length > 500) {
+      return 'Notes cannot exceed 500 characters.';
+    }
+
+    return null;
   }
 }
