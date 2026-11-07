@@ -4,12 +4,16 @@ import { Observable } from 'rxjs';
 import type {
   CreateProductRequest,
   ProductResponse,
+  SellableProductResponse,
   UpdateProductRequest,
 } from './product.model';
 
 /** Persistence boundary for product records. */
 export interface ProductDataSource {
   getAll(): Observable<ProductResponse[]>;
+
+  /** Restricted product projection for employee sale workflows; excludes purchase cost. */
+  getSellableProducts(): Observable<SellableProductResponse[]>;
 
   getById(id: number): Observable<ProductResponse | undefined>;
 
@@ -23,7 +27,7 @@ export interface ProductDataSource {
     request: UpdateProductRequest,
   ): Observable<ProductResponse | undefined>;
 
-  /** Stock quantity is changed only through an inventory operation. */
+  /** Internal mock transaction helper; API implementations must not expose a direct stock write. */
   updateStockQuantity(
     id: number,
     quantity: number,

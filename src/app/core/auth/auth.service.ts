@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@angular/core';
 import { from, of } from 'rxjs';
+import { tap } from 'rxjs/operators';
 
 import { AUTH_DATA_SOURCE } from './auth-data-source';
 import type { AuthDataSource } from './auth-data-source';
@@ -13,6 +14,8 @@ import type {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private sessionRestored = false;
+
   constructor(
     @Inject(AUTH_DATA_SOURCE) private readonly dataSource: AuthDataSource,
   ) {}
@@ -25,16 +28,28 @@ export class AuthService {
     return this.currentUser?.role === 'ADMIN';
   }
 
+  /** Resolve the server session once before route guards make access decisions. */
+  restoreSession() {
+    if (this.sessionRestored) return of(this.currentUser);
+
+    return from(this.dataSource.restoreSession()).pipe(
+      tap(() => { this.sessionRestored = true; }),
+    );
+  }
+
   login(request: LoginRequest) {
-    return from(this.dataSource.login(request));
+    return from(this.dataSource.login(request)).pipe(
+      tap(() => { this.sessionRestored = true; }),
+    );
   }
 
   logout(): void {
+    this.sessionRestored = true;
     this.dataSource.logout();
   }
 
   getEmployees() {
-    return of(this.dataSource.getEmployees());
+    return from(this.dataSource.getEmployees());
   }
 
   createEmployee(request: CreateEmployeeRequest) {

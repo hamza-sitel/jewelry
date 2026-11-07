@@ -10,14 +10,15 @@ import type {
   UpdateCategoryRequest,
   UpdateProductTypeRequest,
 } from './product.model';
-import { MOCK_PRODUCT_CATALOG } from './product-catalog.mock';
 import { PRODUCT_CATALOG_DATA_SOURCE } from './product-catalog-data-source';
 
 /** Application-facing service for category and product-type operations. */
 @Injectable({ providedIn: 'root' })
 export class ProductCatalogService {
   private readonly dataSource = inject(PRODUCT_CATALOG_DATA_SOURCE);
-  private snapshot: ProductCatalogSnapshot = this.copyCatalog(MOCK_PRODUCT_CATALOG);
+  // Start empty: the selected data source must provide the catalog. This prevents
+  // mock fixtures from leaking into API mode before the first successful load.
+  private snapshot: ProductCatalogSnapshot = { categories: [], types: [] };
 
   loadCatalog(): Observable<ProductCatalogSnapshot> {
     return this.dataSource.getCatalog().pipe(

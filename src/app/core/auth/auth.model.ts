@@ -11,17 +11,27 @@ export interface UserResponse {
   createdAt: string;
 }
 
-/** Login command sent to the authentication service. */
+/** Login command sent by the frontend. */
 export interface LoginRequest {
   username: string;
   password: string;
 }
 
-/** The Admin can create employee accounts only; role is assigned by the application. */
+/** API session response. Access token is kept in memory; refresh cookie is HttpOnly. */
+export interface AuthSessionResponse {
+  accessToken: string;
+  user: UserResponse;
+}
+
+/** The Admin can create employee accounts only; role is assigned by the server. */
 export interface CreateEmployeeRequest {
   username: string;
   displayName: string;
   password: string;
+}
+
+export interface UpdateEmployeeStatusRequest {
+  status: UserStatus;
 }
 
 export interface ChangePasswordRequest {

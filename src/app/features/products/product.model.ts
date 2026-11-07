@@ -77,3 +77,16 @@ export interface ProductResponse extends CreateProductRequest {
   status: ProductStatus;
   createdAt: string;
 }
+
+/** Minimal product projection used by the employee sales workspace. It excludes purchase cost. */
+export interface SellableProductResponse {
+  id: number;
+  barcode: string;
+  name: string;
+  categoryName: string;
+  typeName: string;
+  trackingMode: ProductTrackingMode;
+  weight: number | null;
+  quantity: number;
+  status: ProductStatus;
+}

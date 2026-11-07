@@ -37,6 +37,12 @@ describe('ProductService', () => {
 
   const productDataSource: ProductDataSource = {
     getAll: () => of([weightedProduct]),
+    getSellableProducts: () => of([{
+      id: weightedProduct.id, barcode: weightedProduct.barcode, name: weightedProduct.name,
+      categoryName: weightedProduct.categoryName, typeName: weightedProduct.typeName,
+      trackingMode: weightedProduct.trackingMode, weight: weightedProduct.weight,
+      quantity: weightedProduct.quantity, status: weightedProduct.status,
+    }]),
     getById: id => of(id === weightedProduct.id ? weightedProduct : undefined),
     getByBarcode: barcode =>
       of(barcode === weightedProduct.barcode ? weightedProduct : undefined),
@@ -80,6 +86,13 @@ describe('ProductService', () => {
     });
 
     service = TestBed.inject(ProductService);
+  });
+
+  it('exposes a cost-free product projection for the employee sales workflow', async () => {
+    const sellable = await firstValueFrom(service.getSellableProducts());
+    expect(sellable[0].id).toBe(weightedProduct.id);
+    expect(sellable[0]).not.toHaveProperty('purchasePrice');
+    expect(sellable[0]).not.toHaveProperty('salePrice');
   });
 
   it('allows a piece-based product to have multiple pieces and no weight', async () => {

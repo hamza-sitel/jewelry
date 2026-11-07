@@ -2,7 +2,7 @@ import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import type { ProductResponse } from '../products/product.model';
+import type { SellableProductResponse } from '../products/product.model';
 import { ProductService } from '../products/product.service';
 import { StockOperationService } from '../inventory/services/stock-operation.service';
 import { FeedbackMessage } from '../../shared/components/feedback-message/feedback-message';
@@ -19,7 +19,7 @@ export class SalesWorkspace implements OnInit {
   private readonly stockOperationService = inject(StockOperationService);
   private readonly destroyRef = inject(DestroyRef);
 
-  products: ProductResponse[] = [];
+  products: SellableProductResponse[] = [];
   searchTerm = '';
   selectedProductId: number | null = null;
   quantity = 1;
@@ -33,11 +33,11 @@ export class SalesWorkspace implements OnInit {
     this.loadProducts();
   }
 
-  get activeProducts(): ProductResponse[] {
+  get activeProducts(): SellableProductResponse[] {
     return this.products.filter(product => product.status === 'ACTIVE');
   }
 
-  get filteredProducts(): ProductResponse[] {
+  get filteredProducts(): SellableProductResponse[] {
     const query = this.searchTerm.trim().toLocaleLowerCase();
     if (!query) return this.activeProducts;
     return this.activeProducts.filter(product =>
@@ -47,7 +47,7 @@ export class SalesWorkspace implements OnInit {
     );
   }
 
-  get selectedProduct(): ProductResponse | undefined {
+  get selectedProduct(): SellableProductResponse | undefined {
     return this.products.find(product => product.id === this.selectedProductId && product.status === 'ACTIVE');
   }
 
@@ -56,7 +56,7 @@ export class SalesWorkspace implements OnInit {
       !!this.selectedProduct && this.quantity <= this.selectedProduct.quantity;
   }
 
-  selectProduct(product: ProductResponse): void {
+  selectProduct(product: SellableProductResponse): void {
     this.selectedProductId = product.id;
     this.quantity = 1;
     this.errorMessage = '';
@@ -113,7 +113,7 @@ export class SalesWorkspace implements OnInit {
 
   private loadProducts(): void {
     this.isLoading = true;
-    this.productService.getProducts()
+    this.productService.getSellableProducts()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: products => {

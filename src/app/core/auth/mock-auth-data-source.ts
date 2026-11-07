@@ -36,6 +36,10 @@ export class MockAuthDataSource implements AuthDataSource {
     return user?.status === 'ACTIVE' ? this.toResponse(user) : null;
   }
 
+  restoreSession(): Promise<UserResponse | null> {
+    return Promise.resolve(this.getCurrentUser());
+  }
+
   async login(request: LoginRequest): Promise<UserResponse> {
     await this.ensureInitialized();
     const username = request.username.trim().toLocaleLowerCase();
@@ -56,7 +60,7 @@ export class MockAuthDataSource implements AuthDataSource {
     this.storage.remove(this.sessionKey);
   }
 
-  getEmployees(): UserResponse[] {
+  async getEmployees(): Promise<UserResponse[]> {
     return this.readUsers()
       .filter(user => user.role === 'EMPLOYEE')
       .sort((first, second) => first.displayName.localeCompare(second.displayName))

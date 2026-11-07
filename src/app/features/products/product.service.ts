@@ -6,6 +6,7 @@ import type {
   ProductDetailsRequest,
   ProductResponse,
   ProductTrackingMode,
+  SellableProductResponse,
   UpdateProductRequest,
 } from './product.model';
 import { PRODUCT_DATA_SOURCE } from './product-data-source';
@@ -25,6 +26,11 @@ export class ProductService {
     return this.catalog.loadCatalog().pipe(
       switchMap(() => this.dataSource.getAll()),
     );
+  }
+
+  /** Employee-safe product projection used by the sales workspace. */
+  getSellableProducts(): Observable<SellableProductResponse[]> {
+    return this.dataSource.getSellableProducts();
   }
 
   getProductById(id: number): Observable<ProductResponse | undefined> {

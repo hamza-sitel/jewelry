@@ -1,11 +1,12 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, defer, of } from 'rxjs';
+import { Observable, defer, map, of, switchMap } from 'rxjs';
 
 import { BrowserStorageService } from '../../core/services/browser-storage.service';
 import type {
   CreateProductRequest,
   ProductResponse,
   ProductTrackingMode,
+  SellableProductResponse,
   UpdateProductRequest,
 } from './product.model';
 import { MOCK_PRODUCTS } from './product.mock';
@@ -38,6 +39,23 @@ export class MockProductDataSource implements ProductDataSource {
 
   getAll(): Observable<ProductResponse[]> {
     return of(this.products.map(product => this.withCurrentNames(product)));
+  }
+
+  getSellableProducts(): Observable<SellableProductResponse[]> {
+    return this.catalog.loadCatalog().pipe(
+      switchMap(() => this.getAll()),
+      map(products => products.map(product => ({
+        id: product.id,
+        barcode: product.barcode,
+        name: product.name,
+        categoryName: product.categoryName,
+        typeName: product.typeName,
+        trackingMode: product.trackingMode,
+        weight: product.weight,
+        quantity: product.quantity,
+        status: product.status,
+      }))),
+    );
   }
 
   getById(id: number): Observable<ProductResponse | undefined> {
